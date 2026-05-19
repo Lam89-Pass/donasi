@@ -1,18 +1,43 @@
 import React from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+
+// Import Layout
 import Navbar from "./components/layout/Navbar";
-import Home from "./pages/Public/Home/Home";
 import Footer from "./components/layout/Footer";
 
-function App() {
+// Import Pages
+import Home from "./pages/Public/Home/Home";
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import Berita from "./pages/Public/Berita/Berita";
+import Donasi from "./pages/Public/Donasi/Donasi";
+
+function AppContent() {
+  const location = useLocation();
+
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+
   return (
-    <div className="font-sans antialiased text-gray-900 flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-grow">
-        <Home />
-      </main>
-      <Footer />
-    </div>
+    <>
+      {!isAuthPage && <Navbar />}
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/berita" element={<Berita />} />
+        <Route path="/donasi" element={<Donasi />} />
+      </Routes>
+
+      {!isAuthPage && <Footer />}
+    </>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}

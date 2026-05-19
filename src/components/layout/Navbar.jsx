@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,9 +22,9 @@ export default function Navbar() {
       <header className={`hidden md:block fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200" : "bg-transparent border-b-0"}`}>
         <div className={`w-full px-6 lg:px-12 flex items-center justify-between transition-all duration-500 ${isScrolled ? "h-16" : "h-24"}`}>
           <div className="flex-shrink-0">
-            <a href="/" className="font-black text-3xl tracking-tight flex items-center gap-1 group">
+            <Link to="/" className="font-black text-3xl tracking-tight flex items-center gap-1 group">
               <span className="text-gray-900 group-hover:text-ramadhan-green transition-colors">Ruang Donasi</span>
-            </a>
+            </Link>
           </div>
 
           <div className="flex items-center space-x-3 font-medium">
@@ -32,13 +33,13 @@ export default function Navbar() {
               { name: "Berita", url: "/berita" },
               { name: "Donasi", url: "/donasi" },
             ].map((link) => (
-              <a
+              <Link
                 key={link.name}
-                href={link.url}
+                to={link.url}
                 className="px-5 py-2.5 rounded-full text-base font-semibold tracking-wide text-gray-700 hover:text-ramadhan-green hover:bg-white/50 transition-all duration-300 relative overflow-hidden group"
               >
                 <span className="relative z-10 block transition-transform duration-300 group-hover:scale-105">{link.name}</span>
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -59,10 +60,18 @@ export default function Navbar() {
             <div className="h-6 w-px bg-gray-300"></div>
 
             <div className="flex items-center space-x-3">
-              <button className="text-base font-bold px-6 py-2.5 rounded-full border-2 border-ramadhan-green text-ramadhan-green hover:bg-ramadhan-green hover:text-white transition-all duration-300 transform active:scale-95">Masuk</button>
-              <button className="text-base font-bold px-6 py-2.5 rounded-full bg-ramadhan-green border-2 border-ramadhan-green text-white hover:bg-ramadhan-light shadow-md transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95">
+              <Link
+                to="/login"
+                className="inline-block text-center text-base font-bold px-6 py-2.5 rounded-full border-2 border-ramadhan-green text-ramadhan-green hover:bg-ramadhan-green hover:text-white transition-all duration-300 transform active:scale-95"
+              >
+                Masuk
+              </Link>
+              <Link
+                to="/register"
+                className="inline-block text-center text-base font-bold px-6 py-2.5 rounded-full bg-ramadhan-green border-2 border-ramadhan-green text-white hover:bg-ramadhan-light shadow-md transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95"
+              >
                 Daftar
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -81,33 +90,33 @@ export default function Navbar() {
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] rounded-t-2xl">
         <div className="flex justify-around items-center h-16 px-2">
-          <a href="/" className="flex flex-col items-center justify-center text-ramadhan-green group w-16">
+          <Link to="/" className="flex flex-col items-center justify-center text-ramadhan-green group w-16">
             <svg className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
             </svg>
             <span className="text-xs font-bold mt-1 tracking-wide">Beranda</span>
-          </a>
-          <a href="/berita" className="flex flex-col items-center justify-center text-gray-400 hover:text-ramadhan-green group w-16">
+          </Link>
+          <Link to="/berita" className="flex flex-col items-center justify-center text-gray-400 hover:text-ramadhan-green group w-16">
             <svg className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z"></path>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 2v4a2 2 0 002 2h4M7 10h10M7 14h10"></path>
             </svg>
             <span className="text-xs font-medium mt-1 tracking-wide">Berita</span>
-          </a>
-          <a href="/donasi" className="flex flex-col items-center justify-center text-gray-400 hover:text-ramadhan-green group w-16">
+          </Link>
+          <Link to="/donasi" className="flex flex-col items-center justify-center text-gray-400 hover:text-ramadhan-green group w-16">
             <svg className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
             </svg>
             <span className="text-xs font-medium mt-1 tracking-wide">Donasi</span>
-          </a>
-          <a href="/profile" className="flex flex-col items-center justify-center text-gray-400 hover:text-ramadhan-green group w-16">
+          </Link>
+          <Link to="/login" className="flex flex-col items-center justify-center text-gray-400 hover:text-ramadhan-green group w-16">
             <div className="w-6 h-6 rounded-full border border-gray-300 overflow-hidden flex items-center justify-center group-hover:border-ramadhan-green transition-colors">
               <svg className="w-4 h-4 text-gray-400 group-hover:text-ramadhan-green" fill="currentColor" viewBox="0 0 24 24">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
               </svg>
             </div>
             <span className="text-xs font-medium mt-1 tracking-wide">Profile</span>
-          </a>
+          </Link>
         </div>
       </nav>
     </>
