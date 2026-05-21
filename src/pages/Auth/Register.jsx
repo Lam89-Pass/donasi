@@ -1,25 +1,93 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
+import api from "../../api";
+
+const allCountries = [
+  { code: "ID", dial_code: "+62", name: "Indonesia" },
+  { code: "MY", dial_code: "+60", name: "Malaysia" },
+  { code: "SG", dial_code: "+65", name: "Singapore" },
+  { code: "SA", dial_code: "+966", name: "Saudi Arabia" },
+  { code: "TH", dial_code: "+66", name: "Thailand" },
+];
 
 export default function Register() {
-  const [formData, setFormData] = useState({ name: "", identifier: "", password: "", confirmPassword: "" });
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    country_code: "+62",
+    phone: "",
+    password: "",
+    confirm_password: "",
+  });
+
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Kata sandi tidak cocok!");
+
+    if (formData.password !== formData.confirm_password) {
+      toast.error("Kata sandi tidak cocok!");
       return;
     }
-    console.log("Register Data:", formData);
+
+    setIsLoading(true);
+    try {
+      await api.post("/api/auth/register", {
+        name: formData.name,
+        email: formData.email,
+        country_code: formData.country_code,
+        phone: formData.phone,
+        password: formData.password,
+        confirm_password: formData.confirm_password,
+      });
+
+      setIsLoading(false);
+      setIsSuccess(true);
+
+      setTimeout(() => {
+        setIsSuccess(false);
+        navigate("/login");
+      }, 2500);
+    } catch (error) {
+      setIsLoading(false);
+      toast.error(error.response?.data?.message || "Terjadi kesalahan saat mendaftar");
+    }
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-white font-sans overflow-hidden">
+    <div className="min-h-screen flex w-full bg-white font-sans overflow-hidden relative">
+      <Toaster position="top-center" reverseOrder={false} />
+
+      {isSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-500">
+          <div className="bg-white rounded-[2rem] p-10 flex flex-col items-center shadow-2xl transform scale-100 animate-[pulse_0.5s_ease-in-out]">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
+              <svg className="w-10 h-10 text-ramadhan-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Pendaftaran Berhasil!</h3>
+            <p className="text-gray-500 font-medium text-center">
+              Akun Anda telah dibuat.
+              <br />
+              Mengarahkan ke halaman login...
+            </p>
+            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-6 overflow-hidden">
+              <div className="bg-ramadhan-green h-full rounded-full animate-[pulse_2s_ease-in-out_infinite] w-full"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-[#0b1120] relative p-12 overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" style={{ backgroundAttachment: "fixed" }}></div>
         <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-ramadhan-green/20 rounded-full blur-[120px] pointer-events-none"></div>
@@ -44,14 +112,6 @@ export default function Register() {
 
         <div className="relative z-10 flex items-center gap-4 text-gray-500 text-sm font-medium mt-auto">
           <span>&copy; {new Date().getFullYear()} RuangDonasi</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-700"></span>
-          <a href="#" className="hover:text-white transition-colors">
-            Bantuan
-          </a>
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-700"></span>
-          <a href="#" className="hover:text-white transition-colors">
-            Privasi
-          </a>
         </div>
       </div>
 
@@ -64,7 +124,7 @@ export default function Register() {
         </Link>
 
         <div className="w-full max-w-[420px] mt-16 mb-8">
-          <div className="mb-8 text-center lg:text-left">
+          <div className="mb-6 text-center lg:text-left">
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">Buat Akun Baru ✨</h2>
             <p className="text-gray-500 font-medium mt-2">Isi formulir di bawah ini dengan data yang valid.</p>
           </div>
@@ -72,40 +132,58 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap</label>
-              <div className="relative group">
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Nama sesuai identitas"
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 pl-11 pr-4 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all duration-300 text-sm font-medium"
-                />
-                <svg className="w-5 h-5 absolute left-4 top-3.5 text-gray-400 group-focus-within:text-ramadhan-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
+              <input
+                type="text"
+                name="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Nama sesuai identitas"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 px-4 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all text-sm font-medium"
+              />
             </div>
+
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Email atau Nomor HP/WA</label>
-              <div className="relative group">
-                <input
-                  type="text"
-                  name="identifier"
-                  required
-                  value={formData.identifier}
+              <label className="block text-sm font-bold text-gray-700 mb-2">Alamat Email</label>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="contoh@email.com"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 px-4 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nomor HP/WhatsApp</label>
+              <div className="flex gap-2">
+                <select
+                  name="country_code"
+                  value={formData.country_code}
                   onChange={handleChange}
-                  placeholder="contoh@email.com atau 0812..."
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 pl-11 pr-4 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all duration-300 text-sm font-medium"
+                  className="w-[110px] bg-gray-50 border border-gray-200 text-gray-900 px-2 py-3.5 rounded-xl focus:outline-none focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all text-sm font-bold cursor-pointer"
+                >
+                  {allCountries.map((country, index) => (
+                    <option key={index} value={country.dial_code}>
+                      {country.code} {country.dial_code}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="81234567890"
+                  className="flex-grow bg-gray-50 border border-gray-200 text-gray-900 px-4 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all text-sm font-medium"
                 />
-                <svg className="w-5 h-5 absolute left-4 top-3.5 text-gray-400 group-focus-within:text-ramadhan-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Kata Sandi</label>
                 <div className="relative group">
@@ -116,11 +194,8 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 pl-10 pr-10 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all duration-300 text-sm font-medium"
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 pl-4 pr-10 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all text-sm font-medium"
                   />
-                  <svg className="w-4 h-4 absolute left-3.5 top-4 text-gray-400 group-focus-within:text-ramadhan-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-4 text-gray-400 hover:text-gray-700">
                     {showPassword ? (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,27 +220,36 @@ export default function Register() {
                 <label className="block text-sm font-bold text-gray-700 mb-2">Konfirmasi</label>
                 <div className="relative group">
                   <input
-                    type={showPassword ? "text" : "password"}
-                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirm_password"
                     required
-                    value={formData.confirmPassword}
+                    value={formData.confirm_password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 pl-10 pr-4 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all duration-300 text-sm font-medium"
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 pl-4 pr-10 py-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all text-sm font-medium"
                   />
-                  <svg className="w-4 h-4 absolute left-3.5 top-4 text-gray-400 group-focus-within:text-ramadhan-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3.5 top-4 text-gray-400 hover:text-gray-700">
+                    {showConfirmPassword ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"
+                        />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
 
-            <label className="flex items-start gap-3 text-sm font-medium text-gray-600 pt-2 cursor-pointer select-none">
+            <label className="flex items-start gap-3 text-sm font-medium text-gray-600 pt-1 pb-1 cursor-pointer select-none">
               <input type="checkbox" required className="w-4 h-4 mt-0.5 rounded border-gray-300 text-ramadhan-green focus:ring-ramadhan-green transition-all cursor-pointer" />
               <span className="leading-relaxed">
                 Saya menyetujui{" "}
@@ -174,7 +258,7 @@ export default function Register() {
                 </a>{" "}
                 dan{" "}
                 <a href="#" className="text-ramadhan-green font-bold hover:underline">
-                  Kebijakan Privasi
+                  Privasi
                 </a>
                 .
               </span>
@@ -182,16 +266,24 @@ export default function Register() {
 
             <button
               type="submit"
-              className="w-full bg-ramadhan-green hover:bg-green-700 text-white font-extrabold py-3.5 rounded-xl shadow-[0_4px_15px_rgba(22,163,74,0.25)] hover:shadow-lg transition-all active:scale-[0.98] text-base mt-2 flex items-center justify-center gap-2"
+              disabled={isLoading || isSuccess}
+              className={`w-full text-white font-extrabold py-3.5 rounded-xl shadow-[0_4px_15px_rgba(22,163,74,0.25)] transition-all flex items-center justify-center gap-2 text-base mt-2 ${isLoading || isSuccess ? "bg-ramadhan-green/80 cursor-not-allowed" : "bg-ramadhan-green hover:bg-green-700 hover:shadow-lg active:scale-[0.98]"}`}
             >
-              Daftar Akun
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-              </svg>
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                "Daftar Akun"
+              )}
             </button>
           </form>
 
-          <div className="relative flex items-center justify-center mt-8 mb-8">
+          <div className="relative flex items-center justify-center mt-6 mb-6">
             <span className="absolute bg-white px-4 text-xs font-bold text-gray-400 tracking-wider">ATAU DAFTAR DENGAN</span>
             <div className="w-full h-[1px] bg-gray-200"></div>
           </div>
@@ -209,7 +301,7 @@ export default function Register() {
             Google
           </button>
 
-          <div className="text-center mt-10 text-sm font-medium text-gray-500">
+          <div className="text-center mt-6 text-sm font-medium text-gray-500">
             Sudah memiliki akun?{" "}
             <Link to="/login" className="text-ramadhan-green hover:text-green-700 font-extrabold hover:underline transition-all">
               Masuk Di Sini
