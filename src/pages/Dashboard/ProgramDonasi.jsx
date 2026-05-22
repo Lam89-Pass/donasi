@@ -291,7 +291,6 @@ function FormModal({ open, mode, formData, onChange, onSubmit, onClose, submitti
                 }}
               />
             </div>
-
             <div>
               <label style={labelStyle}>
                 Deskripsi <span style={{ color: "#ef4444" }}>*</span>
@@ -307,7 +306,6 @@ function FormModal({ open, mode, formData, onChange, onSubmit, onClose, submitti
                 required
               />
             </div>
-
             <div style={{ display: "flex", gap: 12, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <button
                 type="button"
@@ -394,7 +392,6 @@ function DetailModal({ open, campaign: c, onClose }) {
             </span>
           </div>
         </div>
-
         <div style={{ background: "#080a12", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
             <span style={{ fontSize: 11, color: "#475569" }}>Progress Donasi</span>
@@ -416,17 +413,14 @@ function DetailModal({ open, campaign: c, onClose }) {
             ))}
           </div>
         </div>
-
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
           <span style={{ color: "#475569" }}>Tenggat Waktu</span>
           <span style={{ color: "#94a3b8" }}>{c.deadline || "—"}</span>
         </div>
-
         <div>
           <p style={{ fontSize: 11, fontWeight: 600, color: "#475569", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Deskripsi</p>
           <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap" }}>{c.description || "Tidak ada deskripsi."}</p>
         </div>
-
         <button
           onClick={onClose}
           style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#475569", borderRadius: 9, padding: "11px 0", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
@@ -464,6 +458,71 @@ function Th({ col, label, sortKey, sortDir, onSort }) {
   );
 }
 
+function MobileCard({ c, idx, page, perPage, canManage, canDelete, onDetail, onEdit, onDelete }) {
+  const p = pct(c.gathered, c.target);
+  const isDone = c.status === "Selesai" || p >= 100;
+  const num = (page - 1) * perPage + idx + 1;
+  const cat = CAT_BADGE[c.category] || { bg: "rgba(100,116,139,0.12)", color: "#94a3b8" };
+  return (
+    <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 10, color: "#334155", fontWeight: 600 }}>#{num}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: cat.bg, color: cat.color }}>{c.category}</span>
+          </div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0, lineHeight: 1.4 }}>{c.title}</p>
+          {c.location && <p style={{ fontSize: 11, color: "#64748b", margin: "3px 0 0" }}>{c.location}</p>}
+        </div>
+        <span
+          style={{
+            flexShrink: 0,
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "3px 10px",
+            borderRadius: 20,
+            background: isDone ? "rgba(100,116,139,0.1)" : "rgba(34,197,94,0.1)",
+            color: isDone ? "#64748b" : "#4ade80",
+            border: `1px solid ${isDone ? "rgba(100,116,139,0.2)" : "rgba(34,197,94,0.2)"}`,
+          }}
+        >
+          {isDone ? "Selesai" : "Aktif"}
+        </span>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+          <span style={{ fontSize: 10, color: "#475569" }}>{fmt(c.gathered)} terkumpul</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: isDone ? "#475569" : "#60a5fa" }}>{p}%</span>
+        </div>
+        <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 5, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${p}%`, background: isDone ? "#334155" : "linear-gradient(90deg,#1d4ed8,#3b82f6)", borderRadius: 5 }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          <span style={{ fontSize: 10, color: "#334155" }}>Target: {fmt(c.target)}</span>
+          {c.deadline && <span style={{ fontSize: 10, color: "#334155" }}>{c.deadline}</span>}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <button className="btn-action" onClick={() => onDetail(c)} style={{ flex: 1, background: "rgba(255,255,255,0.05)", color: "#94a3b8", justifyContent: "center" }}>
+          {Icon.Eye} <span>Detail</span>
+        </button>
+        {canManage && (
+          <button className="btn-action" onClick={() => onEdit(c)} style={{ flex: 1, background: "rgba(29,78,216,0.15)", color: "#60a5fa", justifyContent: "center" }}>
+            {Icon.Edit} <span>Edit</span>
+          </button>
+        )}
+        {canDelete && (
+          <button className="btn-action" onClick={() => onDelete(c)} style={{ flex: 1, background: "rgba(220,38,38,0.12)", color: "#f87171", justifyContent: "center" }}>
+            {Icon.Trash} <span>Hapus</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ProgramDonasi() {
   const [userRole, setUserRole] = useState("user");
   const canManage = userRole === "superadmin" || userRole === "admin";
@@ -482,6 +541,15 @@ export default function ProgramDonasi() {
   const [detailModal, setDetailModal] = useState({ open: false, campaign: null });
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   useEffect(() => {
     try {
       const token = localStorage.getItem("token");
@@ -605,7 +673,6 @@ export default function ProgramDonasi() {
       return;
     }
     setSubmitting(true);
-
     const fd = new FormData();
     fd.append("category_id", catId(formData.category));
     fd.append("title", formData.title);
@@ -615,14 +682,9 @@ export default function ProgramDonasi() {
     fd.append("end_date", formData.deadline);
     fd.append("is_urgent", formData.status !== "Aktif" ? "true" : "false");
     fd.append("fundraiser", "Admin");
-
-    if (formData.image_file) {
-      fd.append("image", formData.image_file);
-    }
-
+    if (formData.image_file) fd.append("image", formData.image_file);
     try {
       const config = { headers: { "ngrok-skip-browser-warning": "true" } };
-
       if (formModal.mode === "add") {
         await api.post("/api/campaigns", fd, config);
         notify("Program berhasil dibuat");
@@ -651,11 +713,11 @@ export default function ProgramDonasi() {
   };
 
   const pageRange = useMemo(() => {
-    const delta = 2,
+    const delta = isMobile ? 1 : 2,
       range = [];
     for (let i = Math.max(1, page - delta); i <= Math.min(totalPages, page + delta); i++) range.push(i);
     return range;
-  }, [page, totalPages]);
+  }, [page, totalPages, isMobile]);
 
   const thProps = { sortKey, sortDir, onSort: handleSort };
 
@@ -670,12 +732,22 @@ export default function ProgramDonasi() {
         .btn-action:hover { opacity:0.85;transform:scale(0.97); }
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; }
+        .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+        .filter-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+        @media (max-width: 767px) {
+          .stats-grid { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
+          .filter-row { flex-direction:column; align-items:stretch !important; }
+          .filter-row > * { width:100% !important; min-width:unset !important; flex:unset !important; }
+          .filter-count { display:none !important; }
+          .page-header { flex-direction:column; align-items:flex-start !important; gap:12px; }
+          .page-header button { width:100%; justify-content:center; }
+        }
       `}</style>
 
       <Notifs list={notifs} onRemove={removeNotif} />
 
-      <div className="px-6 pt-6 pb-0 shrink-0">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+      <div style={{ padding: isMobile ? "16px 16px 0" : "24px 24px 0", flexShrink: 0 }}>
+        <div className="page-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: "0 0 4px", textTransform: "uppercase" }}>MANAJEMEN DONASI</p>
             <h1 style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>Program Donasi</h1>
@@ -703,21 +775,21 @@ export default function ProgramDonasi() {
           )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 18 }}>
+        <div className="stats-grid" style={{ marginBottom: 14 }}>
           {[
             { label: "Total Program", value: stats.total, accent: "#94a3b8" },
             { label: "Aktif", value: stats.active, accent: "#34d399" },
             { label: "Selesai", value: stats.done, accent: "#60a5fa" },
             { label: "Dana Terkumpul", value: fmt(stats.gathered), accent: "#a78bfa" },
           ].map((s) => (
-            <div key={s.label} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "12px 16px" }}>
-              <p style={{ fontSize: 10, color: "#475569", margin: "0 0 5px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: s.accent, margin: 0 }}>{s.value}</p>
+            <div key={s.label} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: isMobile ? "10px 12px" : "12px 16px" }}>
+              <p style={{ fontSize: 9, color: "#475569", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</p>
+              <p style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: s.accent, margin: 0 }}>{s.value}</p>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="filter-row" style={{ paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
             <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#475569" }}>{Icon.Search}</span>
             <input
@@ -733,41 +805,41 @@ export default function ProgramDonasi() {
                 borderRadius: 9,
                 paddingLeft: 34,
                 paddingRight: 12,
-                paddingTop: 8,
-                paddingBottom: 8,
+                paddingTop: 9,
+                paddingBottom: 9,
                 fontSize: 12,
                 color: "#e2e8f0",
                 outline: "none",
               }}
             />
           </div>
-          <select
-            value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-            style={{
-              background: "#0d1020",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 9,
-              padding: "8px 12px",
-              fontSize: 11,
-              fontWeight: 600,
-              color: filterCat !== "Semua" ? "#e2e8f0" : "#475569",
-              outline: "none",
-              cursor: "pointer",
-            }}
-          >
-            {CATEGORIES_FILTER.map((c) => (
-              <option key={c} value={c} style={{ background: "#0d1020" }}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: "#475569" }}>Tampilkan</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
+              style={{
+                flex: 1,
+                background: "#0d1020",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 9,
+                padding: "9px 12px",
+                fontSize: 11,
+                fontWeight: 600,
+                color: filterCat !== "Semua" ? "#e2e8f0" : "#475569",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              {CATEGORIES_FILTER.map((c) => (
+                <option key={c} value={c} style={{ background: "#0d1020" }}>
+                  {c}
+                </option>
+              ))}
+            </select>
             <select
               value={perPage}
               onChange={(e) => setPerPage(Number(e.target.value))}
-              style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, padding: "8px 10px", fontSize: 11, fontWeight: 600, color: "#94a3b8", outline: "none", cursor: "pointer" }}
+              style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, padding: "9px 10px", fontSize: 11, fontWeight: 600, color: "#94a3b8", outline: "none", cursor: "pointer" }}
             >
               {PER_PAGE_OPTIONS.map((n) => (
                 <option key={n} value={n} style={{ background: "#0d1020" }}>
@@ -776,11 +848,13 @@ export default function ProgramDonasi() {
               ))}
             </select>
           </div>
-          <span style={{ fontSize: 11, color: "#475569", marginLeft: "auto" }}>{filtered.length} program ditemukan</span>
+          <span className="filter-count" style={{ fontSize: 11, color: "#475569", marginLeft: "auto", whiteSpace: "nowrap" }}>
+            {filtered.length} program ditemukan
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto [&::-webkit-scrollbar]:hidden" style={{ padding: "16px 24px 8px" }}>
+      <div className="flex-1 overflow-auto [&::-webkit-scrollbar]:hidden" style={{ padding: isMobile ? "12px 16px 8px" : "16px 24px 8px" }}>
         {isLoading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200 }}>
             <div style={{ width: 32, height: 32, border: "2px solid #1d4ed8", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite", marginBottom: 12 }} />
@@ -790,6 +864,23 @@ export default function ProgramDonasi() {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200, border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: "0 0 6px" }}>Tidak ada program</p>
             <p style={{ fontSize: 11, color: "#475569", margin: 0 }}>Coba ubah filter atau tambah program baru.</p>
+          </div>
+        ) : isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {paginated.map((c, idx) => (
+              <MobileCard
+                key={c.id}
+                c={c}
+                idx={idx}
+                page={page}
+                perPage={perPage}
+                canManage={canManage}
+                canDelete={canDelete}
+                onDetail={(c) => setDetailModal({ open: true, campaign: c })}
+                onEdit={openEdit}
+                onDelete={(c) => setDeleteModal({ open: true, campaign: c })}
+              />
+            ))}
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
@@ -838,7 +929,7 @@ export default function ProgramDonasi() {
                       <p style={{ fontSize: 10, color: "#334155", margin: "4px 0 0" }}>{fmt(c.gathered)}</p>
                     </td>
                     <td style={{ padding: "14px 16px", fontSize: 11, fontWeight: 500, color: "#94a3b8" }}>{fmt(c.target)}</td>
-                    <td style={{ padding: "14px 16px", fontSize: 11, color: "#64748b" }}>{c.deadline ? c.deadline : c.sisaHari != null ? `${c.sisaHari} hari lagi` : "—"}</td>{" "}
+                    <td style={{ padding: "14px 16px", fontSize: 11, color: "#64748b" }}>{c.deadline ? c.deadline : c.sisaHari != null ? `${c.sisaHari} hari lagi` : "—"}</td>
                     <td style={{ padding: "14px 16px" }}>
                       <span
                         style={{
@@ -880,9 +971,9 @@ export default function ProgramDonasi() {
       </div>
 
       {!isLoading && totalPages > 1 && (
-        <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+        <div style={{ padding: isMobile ? "12px 16px" : "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
           <p style={{ fontSize: 11, color: "#475569", margin: 0 }}>
-            Halaman <span style={{ color: "#94a3b8" }}>{page}</span> dari <span style={{ color: "#94a3b8" }}>{totalPages}</span>
+            <span style={{ color: "#94a3b8" }}>{page}</span> / <span style={{ color: "#94a3b8" }}>{totalPages}</span>
           </p>
           <div style={{ display: "flex", gap: 4 }}>
             {[

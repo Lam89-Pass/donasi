@@ -34,8 +34,8 @@ function Notifs({ list, onRemove }) {
               borderRadius: 10,
               fontSize: 13,
               fontWeight: 500,
-              minWidth: 280,
-              maxWidth: 360,
+              minWidth: 260,
+              maxWidth: 320,
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -55,7 +55,7 @@ function Notifs({ list, onRemove }) {
   );
 }
 
-function Modal({ open, onClose, children, maxWidth = "max-w-md" }) {
+function Modal({ open, onClose, children }) {
   useEffect(() => {
     const h = (e) => e.key === "Escape" && onClose();
     if (open) document.addEventListener("keydown", h);
@@ -66,8 +66,18 @@ function Modal({ open, onClose, children, maxWidth = "max-w-md" }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(3,5,10,0.85)", backdropFilter: "blur(6px)" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0 }} />
       <div
-        className={`relative z-10 w-full ${maxWidth}`}
-        style={{ background: "#10121a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, boxShadow: "0 24px 64px rgba(0,0,0,0.7)", animation: "modalIn 0.18s cubic-bezier(0.16,1,0.3,1)", overflow: "hidden" }}
+        style={{
+          position: "relative",
+          zIndex: 10,
+          width: "100%",
+          maxWidth: 420,
+          background: "#10121a",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 18,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
+          animation: "modalIn 0.18s cubic-bezier(0.16,1,0.3,1)",
+          overflow: "hidden",
+        }}
       >
         {children}
       </div>
@@ -109,22 +119,148 @@ const Ic = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
   ),
-  User: (
-    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  ),
-  Shield: (
-    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-      />
-    </svg>
-  ),
 };
+
+function MobileUserCard({ user, idx, currentPage, itemsPerPage, onDetail, onEdit, onDelete }) {
+  const rc = getRoleCfg(user.role);
+  const isAktif = user.status === "Aktif";
+  const num = (currentPage - 1) * itemsPerPage + idx + 1;
+  return (
+    <div
+      style={{
+        background: "#0d1020",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 12,
+        padding: "13px 14px",
+        marginBottom: 8,
+        animation: `fadeUp 0.3s ease ${idx * 30}ms both`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: rc.bg,
+              border: `1px solid ${rc.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              fontWeight: 700,
+              color: rc.color,
+              flexShrink: 0,
+            }}
+          >
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</p>
+            <p style={{ fontSize: 10, color: "#475569", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+          </div>
+        </div>
+        <span style={{ fontSize: 10, color: "#334155", marginLeft: 8, flexShrink: 0 }}>#{num}</span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            padding: "3px 10px",
+            borderRadius: 6,
+            background: rc.bg,
+            color: rc.color,
+            border: `1px solid ${rc.border}`,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}
+        >
+          {rc.label}
+        </span>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "3px 10px",
+            borderRadius: 6,
+            background: isAktif ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+            border: `1px solid ${isAktif ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}`,
+          }}
+        >
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: isAktif ? "#22c55e" : "#ef4444" }} />
+          <span style={{ fontSize: 10, fontWeight: 700, color: isAktif ? "#4ade80" : "#f87171" }}>{user.status}</span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          onClick={() => onDetail(user)}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            color: "#64748b",
+            borderRadius: 8,
+            padding: "7px 0",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {Ic.Eye} Detail
+        </button>
+        <button
+          onClick={() => onEdit(user)}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+            background: "rgba(29,78,216,0.14)",
+            border: "1px solid rgba(29,78,216,0.2)",
+            color: "#60a5fa",
+            borderRadius: 8,
+            padding: "7px 0",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {Ic.Edit} Edit
+        </button>
+        <button
+          onClick={() => onDelete(user)}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+            background: "rgba(220,38,38,0.12)",
+            border: "1px solid rgba(220,38,38,0.15)",
+            color: "#f87171",
+            borderRadius: 8,
+            padding: "7px 0",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {Ic.Trash} Hapus
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function KelolaRole() {
   const [users, setUsers] = useState([]);
@@ -138,7 +274,16 @@ export default function KelolaRole() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [editData, setEditData] = useState({ role: "", status: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { list: notifs, push: notify, remove: removeNotif } = useNotif();
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
@@ -202,22 +347,9 @@ export default function KelolaRole() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-
       const isActiveBoolean = editData.status === "Aktif";
-
-      await api.put(
-        `/api/users/${selectedUser.id}`,
-        {
-          role: editData.role,
-          is_active: isActiveBoolean,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }, 
-        },
-      );
-
+      await api.put(`/api/users/${selectedUser.id}`, { role: editData.role, is_active: isActiveBoolean }, { headers: { Authorization: `Bearer ${token}` } });
       setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? { ...u, role: editData.role, status: editData.status } : u)));
-
       toast.success("Hak akses dan status berhasil diperbarui!");
       setIsEditModalOpen(false);
     } catch (error) {
@@ -249,11 +381,13 @@ export default function KelolaRole() {
   );
 
   const pageRange = useMemo(() => {
-    const delta = 2;
+    const delta = isMobile ? 1 : 2;
     const range = [];
     for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) range.push(i);
     return range;
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, isMobile]);
+
+  const px = isMobile ? "14px" : "24px";
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", background: "#07090e", fontFamily: "'Sora','DM Sans',system-ui,sans-serif" }}>
@@ -262,43 +396,56 @@ export default function KelolaRole() {
         @keyframes notifIn { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:translateX(0)} }
         @keyframes modalIn { from{opacity:0;transform:scale(0.97) translateY(6px)} to{opacity:1;transform:scale(1) translateY(0)} }
         @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin    { to { transform: rotate(360deg); } }
         .row-hover:hover td { background: rgba(255,255,255,0.025) !important; }
         .act-btn { display:flex;align-items:center;justify-content:center;border:none;border-radius:7px;padding:6px;cursor:pointer;transition:all 0.15s; }
         .act-btn:hover { opacity:0.8;transform:scale(0.95); }
+        .pg-btn { min-width:30px; height:30px; border-radius:7px; border:1px solid rgba(255,255,255,0.07); background:transparent; color:#475569; cursor:pointer; font-size:12px; transition:all 0.12s; font-family:'Sora',sans-serif; }
+        .pg-btn:hover:not(:disabled) { border-color:rgba(255,255,255,0.14); color:#94a3b8; }
+        .pg-btn:disabled { color:#1e293b; cursor:not-allowed; }
+        .pg-btn.active { background:#1d4ed8; border-color:#1d4ed8; color:#fff; font-weight:700; }
+        .stats-grid-role { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+        @media (max-width: 767px) {
+          .stats-grid-role { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
+          .pg-footer-role { flex-direction: column; gap: 8px; align-items: center !important; }
+          .toolbar-role { flex-wrap: wrap; gap: 8px !important; }
+          .toolbar-right-role { width: 100%; display: flex; gap: 8px; }
+          .toolbar-right-role select { flex: 1; }
+        }
       `}</style>
 
       <Notifs list={notifs} onRemove={removeNotif} />
 
-      <div style={{ padding: "0 24px", flexShrink: 0 }}>
-        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      <div style={{ padding: `0 ${px}`, flexShrink: 0 }}>
+        <div style={{ height: isMobile ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0 }}>AKSES & KEAMANAN</p>
-            <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>Manajemen Role</h1>
+            <h1 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>Manajemen Role</h1>
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, padding: "18px 0 0", animation: "fadeUp 0.3s ease both" }}>
+        <div className="stats-grid-role" style={{ padding: "14px 0 0", animation: "fadeUp 0.3s ease both" }}>
           {[
             { label: "Total Pengguna", value: stats.total, accent: "#94a3b8" },
             { label: "Super Admin", value: stats.superadmin, accent: "#a78bfa" },
             { label: "Admin", value: stats.admin, accent: "#60a5fa" },
             { label: "Ditangguhkan", value: stats.suspended, accent: "#f87171" },
           ].map((s, i) => (
-            <div key={i} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "13px 16px", animation: `fadeUp 0.3s ease ${i * 50}ms both` }}>
-              <p style={{ fontSize: 10, color: "#334155", margin: "0 0 5px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
-              <p style={{ fontSize: 22, fontWeight: 700, color: s.accent, margin: 0 }}>{s.value}</p>
+            <div key={i} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: isMobile ? "10px 12px" : "13px 16px", animation: `fadeUp 0.3s ease ${i * 50}ms both` }}>
+              <p style={{ fontSize: 9, color: "#334155", margin: "0 0 4px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
+              <p style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: s.accent, margin: 0 }}>{s.value}</p>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ position: "relative", flex: 1 }}>
+        <div className="toolbar-role" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: isMobile ? "100%" : 0 }}>
             <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#334155" }}>{Ic.Search}</span>
             <input
               type="text"
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Cari berdasarkan nama atau email..."
+              placeholder={isMobile ? "Cari pengguna..." : "Cari berdasarkan nama atau email..."}
               style={{
                 width: "100%",
                 background: "#0d1020",
@@ -312,15 +459,29 @@ export default function KelolaRole() {
                 color: "#e2e8f0",
                 outline: "none",
                 boxSizing: "border-box",
+                fontFamily: "'Sora', sans-serif",
               }}
+              onFocus={(e) => (e.target.style.borderColor = "rgba(59,130,246,0.4)")}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.07)")}
             />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: "#334155" }}>Tampilkan</span>
+          <div className="toolbar-right-role" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>Tampilkan</span>
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, padding: "7px 10px", fontSize: 11, fontWeight: 600, color: "#94a3b8", outline: "none", cursor: "pointer" }}
+              style={{
+                background: "#0d1020",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 9,
+                padding: "7px 10px",
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#94a3b8",
+                outline: "none",
+                cursor: "pointer",
+                fontFamily: "'Sora', sans-serif",
+              }}
             >
               {[10, 15, 50, 100].map((n) => (
                 <option key={n} value={n} style={{ background: "#0d1020" }}>
@@ -328,16 +489,27 @@ export default function KelolaRole() {
                 </option>
               ))}
             </select>
+            {!isMobile && <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>{filteredUsers.length} pengguna</span>}
           </div>
-          <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>{filteredUsers.length} pengguna</span>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px 0" }} className="[&::-webkit-scrollbar]:hidden">
+      <div style={{ flex: 1, overflowY: "auto", padding: `12px ${px} 0`, scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.07) transparent" }}>
         {isLoading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200 }}>
             <div style={{ width: 28, height: 28, border: "2px solid #1d4ed8", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 12 }} />
             <p style={{ fontSize: 12, color: "#475569" }}>Memuat data pengguna...</p>
+          </div>
+        ) : isMobile ? (
+          <div>
+            {currentItems.length === 0 ? (
+              <div style={{ padding: "60px 0", textAlign: "center" }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: "0 0 6px" }}>Data tidak ditemukan</p>
+                <p style={{ fontSize: 11, color: "#334155", margin: 0 }}>Coba sesuaikan kata kunci pencarian.</p>
+              </div>
+            ) : (
+              currentItems.map((user, idx) => <MobileUserCard key={user.id} user={user} idx={idx} currentPage={currentPage} itemsPerPage={itemsPerPage} onDetail={openDetailModal} onEdit={openEditModal} onDelete={openDeleteModal} />)
+            )}
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
@@ -382,19 +554,7 @@ export default function KelolaRole() {
                         <p style={{ fontSize: 10, color: "#475569", margin: "2px 0 0" }}>{user.email}</p>
                       </td>
                       <td style={{ padding: "13px 14px" }}>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: "3px 10px",
-                            borderRadius: 6,
-                            background: rc.bg,
-                            color: rc.color,
-                            border: `1px solid ${rc.border}`,
-                            letterSpacing: "0.04em",
-                            textTransform: "uppercase",
-                          }}
-                        >
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: rc.bg, color: rc.color, border: `1px solid ${rc.border}`, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                           {rc.label}
                         </span>
                       </td>
@@ -437,74 +597,28 @@ export default function KelolaRole() {
       </div>
 
       {!isLoading && totalPages > 0 && (
-        <div style={{ padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+        <div className="pg-footer-role" style={{ padding: isMobile ? `12px ${px}` : `14px ${px}`, display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
           <p style={{ fontSize: 11, color: "#334155", margin: 0 }}>
             Menampilkan <span style={{ color: "#94a3b8", fontWeight: 600 }}>{currentItems.length}</span> dari <span style={{ color: "#94a3b8", fontWeight: 600 }}>{filteredUsers.length}</span> data
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {[
-              { label: "«", action: () => setCurrentPage(1), disabled: currentPage === 1 },
-              { label: "‹", action: () => setCurrentPage((p) => Math.max(1, p - 1)), disabled: currentPage === 1 },
-            ].map((btn, i) => (
-              <button
-                key={i}
-                onClick={btn.action}
-                disabled={btn.disabled}
-                style={{
-                  minWidth: 30,
-                  height: 30,
-                  borderRadius: 7,
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  background: "transparent",
-                  color: btn.disabled ? "#1e293b" : "#475569",
-                  cursor: btn.disabled ? "not-allowed" : "pointer",
-                  fontSize: 12,
-                }}
-              >
-                {btn.label}
-              </button>
-            ))}
+            <button className="pg-btn" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+              «
+            </button>
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
+              ‹
+            </button>
             {pageRange.map((n) => (
-              <button
-                key={n}
-                onClick={() => setCurrentPage(n)}
-                style={{
-                  minWidth: 30,
-                  height: 30,
-                  borderRadius: 7,
-                  border: `1px solid ${n === currentPage ? "#1d4ed8" : "rgba(255,255,255,0.07)"}`,
-                  background: n === currentPage ? "#1d4ed8" : "transparent",
-                  color: n === currentPage ? "#fff" : "#475569",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: n === currentPage ? 700 : 400,
-                }}
-              >
+              <button key={n} className={`pg-btn${n === currentPage ? " active" : ""}`} onClick={() => setCurrentPage(n)}>
                 {n}
               </button>
             ))}
-            {[
-              { label: "›", action: () => setCurrentPage((p) => Math.min(totalPages, p + 1)), disabled: currentPage === totalPages },
-              { label: "»", action: () => setCurrentPage(totalPages), disabled: currentPage === totalPages },
-            ].map((btn, i) => (
-              <button
-                key={i}
-                onClick={btn.action}
-                disabled={btn.disabled}
-                style={{
-                  minWidth: 30,
-                  height: 30,
-                  borderRadius: 7,
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  background: "transparent",
-                  color: btn.disabled ? "#1e293b" : "#475569",
-                  cursor: btn.disabled ? "not-allowed" : "pointer",
-                  fontSize: 12,
-                }}
-              >
-                {btn.label}
-              </button>
-            ))}
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+              ›
+            </button>
+            <button className="pg-btn" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+              »
+            </button>
           </div>
         </div>
       )}
@@ -548,7 +662,6 @@ export default function KelolaRole() {
                       <p style={{ fontSize: 11, color: "#475569", margin: "2px 0 0" }}>{selectedUser.email}</p>
                     </div>
                   </div>
-
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {[
                       { label: "Role", value: rc.label, accent: rc.color },
@@ -562,7 +675,6 @@ export default function KelolaRole() {
                       </div>
                     ))}
                   </div>
-
                   <button
                     onClick={() => setIsDetailModalOpen(false)}
                     style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#475569", borderRadius: 9, padding: "10px 0", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
@@ -575,7 +687,7 @@ export default function KelolaRole() {
           })()}
       </Modal>
 
-      <Modal open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} maxWidth="max-w-sm">
+      <Modal open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         {selectedUser && (
           <>
             <div style={{ padding: "18px 22px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -612,7 +724,6 @@ export default function KelolaRole() {
                     <p style={{ fontSize: 10, color: "#334155", margin: "2px 0 0" }}>{selectedUser.email}</p>
                   </div>
                 </div>
-
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 7 }}>Tingkat Akses</label>
                   <select
@@ -631,7 +742,6 @@ export default function KelolaRole() {
                     </option>
                   </select>
                 </div>
-
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 7 }}>Status Layanan</label>
                   <select
@@ -647,7 +757,6 @@ export default function KelolaRole() {
                     </option>
                   </select>
                 </div>
-
                 <div style={{ display: "flex", gap: 10, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <button
                     type="button"
@@ -681,7 +790,7 @@ export default function KelolaRole() {
         )}
       </Modal>
 
-      <Modal open={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} maxWidth="max-w-sm">
+      <Modal open={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
         {selectedUser && (
           <div style={{ padding: 24 }}>
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
@@ -705,8 +814,6 @@ export default function KelolaRole() {
           </div>
         )}
       </Modal>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

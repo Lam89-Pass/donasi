@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -23,29 +24,6 @@ export default function Footer() {
               </div>
               <p className="leading-relaxed text-xs mt-2">Jl. Tubagus Ismail Dalam, Dago, Kota Bandung, Jawa Barat</p>
             </div>
-
-            <div className="flex items-center gap-4">
-              {[ "instagram", "youtube"].map((social, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  aria-label={social}                  className="w-10 h-10 rounded-full bg-gray-800/50 border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-ramadhan-green hover:text-white hover:border-ramadhan-green hover:-translate-y-1 transition-all duration-300 shadow-sm"
-                >
-                  {social === "instagram" && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                    </svg>
-                  )}
-                  {social === "youtube" && (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                    </svg>
-                  )}
-                </a>
-              ))}
-            </div>
           </div>
 
           <div className="md:pl-12">
@@ -54,11 +32,16 @@ export default function Footer() {
               <span className="absolute -bottom-2 left-0 w-1/2 h-0.5 bg-ramadhan-green rounded-full"></span>
             </h4>
             <ul className="space-y-3.5">
-              {["Beranda", "Program Donasi", "Berita", "FAQ"].map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-gray-400 hover:text-white hover:translate-x-2 transition-all duration-300 inline-block text-sm font-medium">
-                    {link}
-                  </a>
+              {[
+                { label: "Beranda", url: "/" },
+                { label: "Program Donasi", url: "/donasi" },
+                { label: "Berita", url: "/berita" },
+                { label: "FAQ", url: "/faq" },
+              ].map((link) => (
+                <li key={link.label}>
+                  <Link to={link.url} className="text-gray-400 hover:text-white hover:translate-x-2 transition-all duration-300 inline-block text-sm font-medium">
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>

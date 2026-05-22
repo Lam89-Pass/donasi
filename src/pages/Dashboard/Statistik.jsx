@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import api from "../../api";
+
 const fmt = (n) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -21,20 +22,7 @@ const getLast6Months = () => {
 
 const parseIndonesianDate = (dateStr) => {
   if (!dateStr) return new Date();
-  const months = {
-    Jan: 0,
-    Feb: 1,
-    Mar: 2,
-    Apr: 3,
-    Mei: 4,
-    Jun: 5,
-    Jul: 6,
-    Ags: 7,
-    Sep: 8,
-    Okt: 9,
-    Nov: 10,
-    Des: 11,
-  };
+  const months = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, Mei: 4, Jun: 5, Jul: 6, Ags: 7, Sep: 8, Okt: 9, Nov: 10, Des: 11 };
   const parts = dateStr.split(" ");
   if (parts.length === 3) {
     const day = parseInt(parts[0], 10);
@@ -42,8 +30,11 @@ const parseIndonesianDate = (dateStr) => {
     const year = parseInt(parts[2], 10);
     if (month !== undefined) return new Date(year, month, day);
   }
-  return new Date(dateStr); 
+  return new Date(dateStr);
 };
+
+const isAdminRole = (role) => role === "admin" || role === "superadmin";
+
 function BarChart({ data }) {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data.map((d) => d.value), 1);
@@ -96,6 +87,7 @@ function StatCard({ label, value, sub, accent = "#3b82f6", delay = 0, isLoading 
       style={{
         background: "#0d1020",
         border: "1px solid rgba(255,255,255,0.06)",
+        borderTop: `2px solid ${accent}30`,
         borderRadius: 14,
         padding: "16px 18px",
         display: "flex",
@@ -103,7 +95,6 @@ function StatCard({ label, value, sub, accent = "#3b82f6", delay = 0, isLoading 
         gap: 6,
         animation: "fadeUp 0.4s ease both",
         animationDelay: `${delay}ms`,
-        borderTop: `2px solid ${accent}30`,
       }}
     >
       <p style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>{label}</p>
@@ -117,76 +108,90 @@ function StatCard({ label, value, sub, accent = "#3b82f6", delay = 0, isLoading 
   );
 }
 
+
 export default function Statistik() {
   const [userRole, setUserRole] = useState("user");
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({ totalDana: 0, programAktif: 0, transaksiSukses: 0, totalBerita: 0 });
+  const [stats, setStats] = useState({
+    totalDana: 0,
+    programAktif: 0,
+    transaksiSukses: 0,
+    totalBerita: 0,
+  });
   const [recentActivity, setRecentActivity] = useState([]);
   const [chartData, setChartData] = useState([]);
 
-  useEffect(() => {
-    const role = localStorage.getItem("devRole") || "user";
-    setUserRole(role);
-    fetchDashboardData(role);
-  }, []);
+useEffect(() => {
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const role = userData.role || "user";
+  setUserRole(role);
+  fetchDashboardData(role);
+}, []);
 
   const fetchDashboardData = async (role) => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const config = { headers: { Authorization: `Bearer ${token}`, "ngrok-skip-browser-warning": "true" } };
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true",
+      };
+
+      const isAdmin = isAdminRole(role);
       const [txRes, campRes, newsRes] = await Promise.all([
-        api.get("/api/transactions", config),
-        api.get("/api/campaigns", config),
-        api.get("/api/articles", config).catch(() => ({ data: { data: [] } })),
+        api.get("/api/transactions", { headers }),
+        api.get("/api/campaigns", { headers }),
+        isAdmin ? api.get("/api/articles", { headers }).catch(() => ({ data: { data: [] } })) : Promise.resolve(null),
       ]);
 
       const transactions = txRes.data.data || [];
       const campaigns = campRes.data.data || [];
-      const berita = newsRes.data.data || newsRes.data || [];
+      const berita = isAdmin ? newsRes?.data?.data || newsRes?.data || [] : [];
 
-      let totalDana = 0,
-        txSukses = 0;
+      let totalDana = 0;
+      let txSukses = 0;
       const programUnik = new Set();
       const activities = [];
 
-      const monthlyMap = {};
       const last6 = getLast6Months();
+      const monthlyMap = {};
       last6.forEach(({ year, monthIdx }) => {
         monthlyMap[`${year}-${monthIdx}`] = 0;
       });
 
       transactions.forEach((t) => {
         const isSuccess = t.status === "success" || t.status === "Sukses";
-        if (isSuccess) {
-          totalDana += t.amount;
-          txSukses++;
-          if (t.program) programUnik.add(t.program);
-          if (activities.length < 5) {
-            activities.push({
-              name: t.user,
-              act: "berdonasi",
-              amount: `Rp ${t.amount.toLocaleString("id-ID")}`,
-              target: t.program,
-              time: t.date,
-            });
-          }
+        if (!isSuccess) return;
 
-          if (t.date) {
-            const d = parseIndonesianDate(t.date);
-            if (!isNaN(d)) {
-              const key = `${d.getFullYear()}-${d.getMonth()}`;
-              if (key in monthlyMap) monthlyMap[key] += t.amount;
-            }
+        totalDana += t.amount;
+        txSukses++;
+
+        if (t.program) programUnik.add(t.program);
+
+        if (activities.length < 5) {
+          activities.push({
+            name: t.user,
+            act: "berdonasi",
+            amount: `Rp ${t.amount.toLocaleString("id-ID")}`,
+            target: t.program,
+            time: t.date,
+          });
+        }
+
+        if (t.date) {
+          const d = parseIndonesianDate(t.date);
+          if (!isNaN(d)) {
+            const key = `${d.getFullYear()}-${d.getMonth()}`;
+            if (key in monthlyMap) monthlyMap[key] += t.amount;
           }
         }
       });
 
       setStats({
         totalDana,
-        programAktif: role === "user" ? programUnik.size : campaigns.length,
+        programAktif: isAdmin ? campaigns.length : programUnik.size,
         transaksiSukses: txSukses,
-        totalBerita: Array.isArray(berita) ? berita.length : 0,
+        totalBerita: isAdmin && Array.isArray(berita) ? berita.length : 0,
       });
 
       setRecentActivity(activities);
@@ -206,18 +211,68 @@ export default function Statistik() {
     }
   };
 
-  const isUser = userRole === "user";
+  const isAdmin = isAdminRole(userRole);
+  const gridCols = isAdmin ? 4 : 3;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", background: "#07090e", fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif", color: "#e2e8f0" }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        background: "#07090e",
+        fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif",
+        color: "#e2e8f0",
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
-        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes shimmer { 0%{background-position:-500px 0} 100%{background-position:500px 0} }
-        .skeleton { background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.06) 50%,rgba(255,255,255,0.03) 75%); background-size:500px 100%; animation:shimmer 1.4s infinite linear; }
-        .stat-scroll::-webkit-scrollbar { display:none; }
-        .feed-item { transition:background 0.15s; border-radius:8px; }
-        .feed-item:hover { background:rgba(255,255,255,0.025); }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -500px 0; }
+          100% { background-position:  500px 0; }
+        }
+        .skeleton {
+          background: linear-gradient(
+            90deg,
+            rgba(255,255,255,0.03) 25%,
+            rgba(255,255,255,0.06) 50%,
+            rgba(255,255,255,0.03) 75%
+          );
+          background-size: 500px 100%;
+          animation: shimmer 1.4s infinite linear;
+        }
+        .stat-scroll::-webkit-scrollbar { display: none; }
+        .feed-item { transition: background 0.15s; border-radius: 8px; }
+        .feed-item:hover { background: rgba(255,255,255,0.025); }
+
+        .stat-grid {
+          display: grid;
+          grid-template-columns: repeat(${gridCols}, 1fr);
+          gap: 14px;
+        }
+        .bottom-grid {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 14px;
+        }
+
+        @media (max-width: 1024px) {
+          .stat-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+          .bottom-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 640px) {
+          .stat-grid  { grid-template-columns: 1fr 1fr !important; }
+          .bottom-grid { grid-template-columns: 1fr !important; }
+          .stat-scroll { padding: 16px !important; }
+        }
+        @media (max-width: 400px) {
+          .stat-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
       <div
@@ -237,19 +292,20 @@ export default function Statistik() {
         }}
       >
         <div>
-          <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0, textTransform: "uppercase" }}>{isUser ? "RINGKASAN DONATUR" : "TINJAUAN PLATFORM"}</p>
-          <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>{isUser ? "Statistik Saya" : "Dashboard Statistik"}</h1>
+          <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0, textTransform: "uppercase" }}>{isAdmin ? "TINJAUAN PLATFORM" : "RINGKASAN DONATUR"}</p>
+          <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>{isAdmin ? "Dashboard Statistik" : "Statistik Saya"}</h1>
         </div>
       </div>
 
       <div className="stat-scroll" style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        <div className="stat-grid">
           <div
             style={{
               background: "linear-gradient(135deg, #0d1830 0%, #0d1020 100%)",
               border: "1px solid rgba(37,99,235,0.25)",
+              borderTop: "2px solid rgba(37,99,235,0.4)",
               borderRadius: 16,
-              padding: "20px 20px",
+              padding: "20px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -257,11 +313,22 @@ export default function Statistik() {
               position: "relative",
               overflow: "hidden",
               animation: "fadeUp 0.3s ease both",
-              borderTop: "2px solid rgba(37,99,235,0.4)",
             }}
           >
-            <div style={{ position: "absolute", top: -30, right: -30, width: 100, height: 100, background: "rgba(37,99,235,0.15)", borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none" }} />
-            <p style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>{isUser ? "Total Donasi Saya" : "Total Donasi"}</p>
+            <div
+              style={{
+                position: "absolute",
+                top: -30,
+                right: -30,
+                width: 100,
+                height: 100,
+                background: "rgba(37,99,235,0.15)",
+                borderRadius: "50%",
+                filter: "blur(40px)",
+                pointerEvents: "none",
+              }}
+            />
+            <p style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>{isAdmin ? "Total Donasi" : "Total Donasi Saya"}</p>
             {isLoading ? (
               <span className="skeleton" style={{ display: "block", width: "75%", height: 28, borderRadius: 6, marginTop: 10 }} />
             ) : (
@@ -269,28 +336,61 @@ export default function Statistik() {
             )}
           </div>
 
-          <StatCard label={isUser ? "Program Didukung" : "Program Aktif"} value={stats.programAktif} sub={isUser ? "berhasil didanai" : "kampanye berjalan"} accent="#34d399" delay={60} isLoading={isLoading} />
-          <StatCard label="Transaksi Sukses" value={stats.transaksiSukses.toLocaleString("id-ID")} sub={isUser ? "donasi berhasil" : "seluruh platform"} accent="#60a5fa" delay={120} isLoading={isLoading} />
-          <StatCard label="Total Berita" value={stats.totalBerita} sub="artikel dipublikasikan" accent="#f472b6" delay={180} isLoading={isLoading} />
+          <StatCard label={isAdmin ? "Program Aktif" : "Program Didukung"} value={stats.programAktif} sub={isAdmin ? "kampanye berjalan" : "berhasil didanai"} accent="#34d399" delay={60} isLoading={isLoading} />
+          <StatCard label="Transaksi Sukses" value={stats.transaksiSukses.toLocaleString("id-ID")} sub={isAdmin ? "seluruh platform" : "donasi berhasil"} accent="#60a5fa" delay={120} isLoading={isLoading} />
+          {isAdmin && <StatCard label="Total Berita" value={stats.totalBerita} sub="artikel dipublikasikan" accent="#f472b6" delay={180} isLoading={isLoading} />}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14 }}>
-          <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "20px 22px", animation: "fadeUp 0.4s ease both", animationDelay: "200ms" }}>
+        <div className="bottom-grid">
+          <div
+            style={{
+              background: "#0d1020",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 16,
+              padding: "20px 22px",
+              animation: "fadeUp 0.4s ease both",
+              animationDelay: "200ms",
+            }}
+          >
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
               <div>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>Tren Dana Masuk</p>
                 <p style={{ fontSize: 10, color: "#334155", margin: "3px 0 0" }}>6 bulan terakhir</p>
               </div>
-              <div style={{ padding: "4px 10px", borderRadius: 6, background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.2)", fontSize: 10, fontWeight: 600, color: "#60a5fa" }}>Aktual</div>
+              <div
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  background: "rgba(37,99,235,0.1)",
+                  border: "1px solid rgba(37,99,235,0.2)",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: "#60a5fa",
+                }}
+              >
+                Aktual
+              </div>
             </div>
             {isLoading ? <span className="skeleton" style={{ display: "block", width: "100%", height: 148, borderRadius: 8 }} /> : <BarChart data={chartData} />}
           </div>
 
-          <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "20px 22px", display: "flex", flexDirection: "column", animation: "fadeUp 0.4s ease both", animationDelay: "260ms" }}>
+          <div
+            style={{
+              background: "#0d1020",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 16,
+              padding: "20px 22px",
+              display: "flex",
+              flexDirection: "column",
+              animation: "fadeUp 0.4s ease both",
+              animationDelay: "260ms",
+            }}
+          >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>Aktivitas Terbaru</p>
               <span style={{ fontSize: 10, color: "#334155" }}>{recentActivity.length} entri</span>
             </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (

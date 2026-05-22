@@ -14,7 +14,7 @@ function formatCompactRupiah(num) {
   return `Rp ${num}`;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "ruangdonasiapi-production.up.railway.app";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://ruangdonasiapi-production.up.railway.app";
 
 function DonationCard({ id, kategori, lokasi, judul, terkumpul, target, persen, sisaWaktu, gambar, berakhir }) {
   const navigate = useNavigate();
@@ -259,17 +259,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f5f7f5] font-sans pb-20">
-      <section className="relative w-full" style={{ height: "85vh", minHeight: 480 }}>
-        <img src={bannerImg} alt="Banner Donasi" className="w-full h-full object-cover object-top" />
+      <section className="relative w-full md:h-[85vh] md:min-h-[480px]">
+        <img src={bannerImg} alt="Banner Donasi" className="w-full h-auto block md:h-full md:object-cover md:object-top" />
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 -mt-8 relative z-20">
+      <section className="max-w-5xl mx-auto px-4 md:px-6 -mt-6 md:-mt-8 relative z-20">
         <div className="bg-white rounded-2xl shadow-md grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
           {statsData.map((stat, idx) => (
-            <div key={idx} className="flex flex-col items-center py-7 px-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-[#eaf5ef] flex items-center justify-center mb-3 text-[#1a7a4a]">{stat.icon}</div>
-              <p className="text-2xl font-black text-gray-900">{isLoading ? <span className="animate-pulse bg-gray-200 h-6 w-20 rounded inline-block"></span> : stat.value}</p>
-              <p className="text-gray-500 text-sm mt-1 font-medium">{stat.label}</p>
+            <div key={idx} className="flex flex-col items-center py-3 px-1.5 md:py-7 md:px-4 text-center">
+              <div className="w-6 h-6 md:w-12 md:h-12 rounded-full bg-[#eaf5ef] flex items-center justify-center mb-1.5 md:mb-3 text-[#1a7a4a] [&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-6 md:[&>svg]:h-6">{stat.icon}</div>
+              <p className="text-sm md:text-2xl font-black text-gray-900 leading-tight">{isLoading ? <span className="animate-pulse bg-gray-200 h-4 w-12 md:h-6 md:w-20 rounded inline-block"></span> : stat.value}</p>
+              <p className="text-gray-500 text-[10px] md:text-sm mt-0.5 md:mt-1 font-medium leading-tight">{stat.label}</p>
             </div>
           ))}
         </div>

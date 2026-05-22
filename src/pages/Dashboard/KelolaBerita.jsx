@@ -108,7 +108,7 @@ const Ic = {
   ),
 };
 
-function Modal({ open, onClose, children, maxWidth = "max-w-xl" }) {
+function ModalCenter({ open, onClose, children, maxWidth = "max-w-xl" }) {
   useEffect(() => {
     const h = (e) => e.key === "Escape" && onClose();
     if (open) document.addEventListener("keydown", h);
@@ -128,6 +128,26 @@ function Modal({ open, onClose, children, maxWidth = "max-w-xl" }) {
   );
 }
 
+function ModalForm({ open, onClose, children, maxWidth = "max-w-xl" }) {
+  useEffect(() => {
+    const h = (e) => e.key === "Escape" && onClose();
+    if (open) document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(3,5,10,0.85)", backdropFilter: "blur(6px)" }} className="modal-form-backdrop">
+      <div onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div
+        className={`relative z-10 w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl overflow-hidden modal-form-inner`}
+        style={{ background: "#10121a", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", animation: "modalIn 0.18s cubic-bezier(0.16,1,0.3,1)" }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ModalHead({ title, sub, onClose }) {
   return (
     <div style={{ padding: "18px 22px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0 }}>
@@ -135,7 +155,7 @@ function ModalHead({ title, sub, onClose }) {
         <p style={{ fontSize: 13, fontWeight: 600, color: "#f1f5f9", margin: 0 }}>{title}</p>
         {sub && <p style={{ fontSize: 11, color: "#475569", margin: "3px 0 0" }}>{sub}</p>}
       </div>
-      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#475569", padding: 2 }}>
+      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#475569", padding: 2, minWidth: 36, minHeight: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {Ic.Close}
       </button>
     </div>
@@ -144,27 +164,26 @@ function ModalHead({ title, sub, onClose }) {
 
 function FormModal({ open, mode, formData, onChange, onFileChange, onSubmit, onClose, submitting }) {
   const isEdit = mode === "edit";
-  const inSt = { background: "#080a12", border: "1px solid rgba(255,255,255,0.08)", color: "#e2e8f0", borderRadius: 9, padding: "10px 14px", fontSize: 13, width: "100%", outline: "none" };
+  const inSt = { background: "#080a12", border: "1px solid rgba(255,255,255,0.08)", color: "#e2e8f0", borderRadius: 9, padding: "10px 14px", fontSize: 13, width: "100%", outline: "none", boxSizing: "border-box" };
   const lblSt = { fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 7 };
 
   return (
-    <Modal open={open} onClose={onClose} maxWidth="max-w-2xl">
+    <ModalForm open={open} onClose={onClose} maxWidth="max-w-2xl">
       <ModalHead title={isEdit ? "Edit Artikel" : "Tulis Artikel Baru"} sub={isEdit ? "Perbarui konten publikasi" : "Buat artikel atau laporan baru"} onClose={onClose} />
       <div style={{ overflowY: "auto", flex: 1 }} className="[&::-webkit-scrollbar]:hidden">
         <form onSubmit={onSubmit}>
           <div style={{ padding: "22px 22px", display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* INPUT GAMBAR DARI LOKAL */}
             <div>
               <label style={lblSt}>Gambar Sampul (Opsional)</label>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {formData.image ? (
-                  <img src={formData.image} alt="Preview" style={{ width: 80, height: 50, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                  <img src={formData.image} alt="Preview" style={{ width: 80, height: 50, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: 80, height: 50, background: "#080a12", borderRadius: 6, border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}>
+                  <div style={{ width: 80, height: 50, flexShrink: 0, background: "#080a12", borderRadius: 6, border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}>
                     {Ic.Upload}
                   </div>
                 )}
-                <input type="file" accept="image/*" onChange={onFileChange} style={{ flex: 1, fontSize: 12, color: "#e2e8f0" }} />
+                <input type="file" accept="image/*" onChange={onFileChange} style={{ flex: 1, fontSize: 12, color: "#e2e8f0", minWidth: 0 }} />
               </div>
             </div>
 
@@ -175,7 +194,7 @@ function FormModal({ open, mode, formData, onChange, onFileChange, onSubmit, onC
               <input type="text" name="title" value={formData.title} onChange={onChange} placeholder="Masukkan judul artikel yang informatif..." style={inSt} required />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="form-cat-status" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <div>
                 <label style={lblSt}>Kategori</label>
                 <select name="category" value={formData.category} onChange={onChange} style={{ ...inSt, cursor: "pointer" }}>
@@ -187,7 +206,7 @@ function FormModal({ open, mode, formData, onChange, onFileChange, onSubmit, onC
                 </select>
               </div>
               <div>
-                <label style={lblSt}>Status</label>
+                <label style={lblSt}>Status Publikasi</label>
                 <select name="status" value={formData.status} onChange={onChange} style={{ ...inSt, cursor: "pointer" }}>
                   <option value="Dipublikasi" style={{ background: "#10121a" }}>
                     Publikasi Langsung
@@ -261,13 +280,13 @@ function FormModal({ open, mode, formData, onChange, onFileChange, onSubmit, onC
           </div>
         </form>
       </div>
-    </Modal>
+    </ModalForm>
   );
 }
 
 function DeleteModal({ open, item, onConfirm, onClose }) {
   return (
-    <Modal open={open} onClose={onClose} maxWidth="max-w-sm">
+    <ModalCenter open={open} onClose={onClose} maxWidth="max-w-sm">
       <div style={{ padding: 24 }}>
         <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
           {Ic.Trash}
@@ -285,7 +304,7 @@ function DeleteModal({ open, item, onConfirm, onClose }) {
           </button>
         </div>
       </div>
-    </Modal>
+    </ModalCenter>
   );
 }
 
@@ -293,38 +312,36 @@ function DetailModal({ open, item, onClose }) {
   if (!item) return null;
   const cat = CAT_THEME[item.category] || { bg: "rgba(148,163,184,0.1)", color: "#94a3b8" };
   return (
-    <Modal open={open} onClose={onClose} maxWidth="max-w-2xl">
+    <ModalCenter open={open} onClose={onClose} maxWidth="max-w-2xl">
       <div style={{ height: 3, background: `linear-gradient(90deg, ${cat.color}, transparent)`, flexShrink: 0 }} />
       <ModalHead title={item.title} sub={`${item.category}  ·  ${item.date}`} onClose={onClose} />
       <div style={{ overflowY: "auto", flex: 1, padding: "22px 22px" }} className="[&::-webkit-scrollbar]:hidden">
         {item.image && <img src={item.image} alt={item.title} style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: 12, marginBottom: 20, border: "1px solid rgba(255,255,255,0.05)" }} />}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, padding: "12px 14px", background: "#080a12", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, padding: "12px 14px", background: "#080a12", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
           <div style={{ width: 34, height: 34, borderRadius: "50%", background: cat.bg, color: cat.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
             {(item.author || "A").charAt(0)}
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 80 }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>{item.author || "Admin"}</p>
             <p style={{ fontSize: 10, color: "#334155", margin: "2px 0 0" }}>Diterbitkan {item.date}</p>
           </div>
-
-          <span style={{ fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 6, background: "rgba(255,255,255,0.05)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)", marginRight: 6 }}>
-            ⏳ {item.read_time} Min
-          </span>
-
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              padding: "4px 10px",
-              borderRadius: 6,
-              background: item.status === "Dipublikasi" ? "rgba(34,197,94,0.1)" : "rgba(251,146,60,0.1)",
-              color: item.status === "Dipublikasi" ? "#4ade80" : "#fb923c",
-              border: `1px solid ${item.status === "Dipublikasi" ? "rgba(34,197,94,0.2)" : "rgba(251,146,60,0.2)"}`,
-            }}
-          >
-            {item.status}
-          </span>
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 6, background: "rgba(255,255,255,0.05)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)" }}>⏳ {item.read_time} Min</span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: item.status === "Dipublikasi" ? "rgba(34,197,94,0.1)" : "rgba(251,146,60,0.1)",
+                color: item.status === "Dipublikasi" ? "#4ade80" : "#fb923c",
+                border: `1px solid ${item.status === "Dipublikasi" ? "rgba(34,197,94,0.2)" : "rgba(251,146,60,0.2)"}`,
+              }}
+            >
+              {item.status}
+            </span>
+          </div>
         </div>
 
         <span style={{ fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 6, background: cat.bg, color: cat.color, display: "inline-block", marginBottom: 16 }}>{item.category}</span>
@@ -342,7 +359,7 @@ function DetailModal({ open, item, onClose }) {
           Tutup
         </button>
       </div>
-    </Modal>
+    </ModalCenter>
   );
 }
 
@@ -353,12 +370,12 @@ export default function KelolaBerita() {
   const [news, setNews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { list: notifs, push: notify, remove: removeNotif } = useNotif();
+
   const fetchNews = async () => {
     setIsLoading(true);
     try {
       const res = await api.get("/api/articles", { headers: { "ngrok-skip-browser-warning": "true" } });
       const data = res.data.data || res.data || [];
-
       const mappedData = data.map((n) => ({
         id: n.id || n.ID,
         title: n.title || n.Title,
@@ -391,6 +408,7 @@ export default function KelolaBerita() {
   const [detailModal, setDetailModal] = useState({ open: false, item: null });
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+
   const filtered = useMemo(
     () =>
       news.filter((n) => {
@@ -404,20 +422,14 @@ export default function KelolaBerita() {
 
   const published = news.filter((n) => n.status === "Dipublikasi").length;
   const drafts = news.filter((n) => n.status === "Draft").length;
+
   const openAdd = () => {
     setFormData(EMPTY_FORM);
     setFormModal({ open: true, mode: "add", item: null });
   };
 
   const openEdit = (item) => {
-    setFormData({
-      title: item.title,
-      category: item.category,
-      excerpt: item.excerpt,
-      content: item.content,
-      status: item.status,
-      image: item.image,
-    });
+    setFormData({ title: item.title, category: item.category, excerpt: item.excerpt, content: item.content, status: item.status, image: item.image });
     setFormModal({ open: true, mode: "edit", item });
   };
 
@@ -429,32 +441,25 @@ export default function KelolaBerita() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onloadend = () => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const MAX_WIDTH = 800;
-
         let width = img.width;
         let height = img.height;
         if (width > MAX_WIDTH) {
           height = Math.round((height * MAX_WIDTH) / width);
           width = MAX_WIDTH;
         }
-
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-        setFormData((prev) => ({ ...prev, image: compressedBase64 }));
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        setFormData((prev) => ({ ...prev, image: canvas.toDataURL("image/jpeg", 0.7) }));
       };
-
       img.src = reader.result;
     };
-
     reader.readAsDataURL(file);
   };
 
@@ -465,19 +470,17 @@ export default function KelolaBerita() {
       return;
     }
     setSubmitting(true);
-
     try {
       const payload = {
         title: formData.title,
         content: formData.content,
         excerpt: formData.excerpt,
         category: formData.category,
-        read_time: Math.max(1, Math.ceil(formData.content.length / 400)), 
-        color: "#1a1f3a", 
+        read_time: Math.max(1, Math.ceil(formData.content.length / 400)),
+        color: "#1a1f3a",
         accent: CAT_THEME[formData.category]?.color || "#fb923c",
-        image: formData.image, 
+        image: formData.image,
       };
-
       if (formModal.mode === "add") {
         await api.post("/api/articles", payload, { headers: { "ngrok-skip-browser-warning": "true" } });
         notify("Artikel berhasil ditayangkan");
@@ -485,7 +488,6 @@ export default function KelolaBerita() {
         await api.put(`/api/articles/${formModal.item.id}`, payload, { headers: { "ngrok-skip-browser-warning": "true" } });
         notify("Artikel berhasil diperbarui");
       }
-
       setFormModal({ open: false, mode: "add", item: null });
       fetchNews();
     } catch (error) {
@@ -513,17 +515,67 @@ export default function KelolaBerita() {
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
         @keyframes notifIn { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
         @keyframes modalIn { from { opacity:0; transform:scale(0.97) translateY(6px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        @keyframes sheetIn { from { opacity:0; transform:translateY(100%); } to { opacity:1; transform:translateY(0); } }
         @keyframes fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .news-row:hover { background: rgba(255,255,255,0.025) !important; }
         .news-row { transition: background 0.15s; }
         .act-btn { display:flex; align-items:center; justify-content:center; gap:5px; border:none; border-radius:7px; padding:5px 10px; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.15s; }
         .act-btn:hover { opacity:0.8; transform:scale(0.97); }
+
+        @media (max-width: 640px) {
+          /* Notifikasi — full width, tidak terpotong */
+          .notif-container { top: 12px !important; right: 12px !important; left: 12px !important; }
+          .notif-container > div { min-width: unset !important; max-width: 100% !important; width: 100%; box-sizing: border-box; }
+
+          /* Padding halaman */
+          .page-pad { padding: 0 14px !important; }
+          .list-pad { padding: 10px 14px 32px !important; }
+
+          /* Header */
+          .hdr { height: auto !important; min-height: 56px !important; padding: 12px 0 !important; }
+          .hdr h1 { font-size: 15px !important; }
+
+          /* Stats — tetap 3 kolom tapi lebih compact */
+          .stats-grid { gap: 8px !important; padding-top: 12px !important; }
+          .stats-grid > div { padding: 10px 10px !important; }
+          .stats-grid .s-lbl { font-size: 9px !important; }
+          .stats-grid .s-val { font-size: 18px !important; }
+
+          /* Search+filter — search full width, filter row di bawah */
+          .sfrow { flex-direction: column !important; gap: 8px !important; padding: 12px 0 !important; }
+          .sfrow .s-wrap { width: 100% !important; }
+          .sfrow .f-wrap { display: flex !important; align-items: center !important; gap: 8px !important; width: 100% !important; }
+          .sfrow .f-wrap select { flex: 1 !important; }
+
+          /* Tombol aksi artikel — susun vertikal */
+          .act-group { flex-direction: column !important; padding: 10px 10px 10px 4px !important; gap: 5px !important; }
+          .act-btn { padding: 7px 8px !important; }
+
+          /* Meta baris artikel — date pindah ke bawah */
+          .news-meta { flex-wrap: wrap !important; }
+          .news-meta .n-date { width: 100% !important; margin-left: 0 !important; margin-top: 1px !important; }
+
+          /* Form modal — bottom sheet di mobile */
+          .modal-form-backdrop { align-items: flex-end !important; padding: 0 !important; }
+          .modal-form-inner {
+            border-radius: 18px 18px 0 0 !important;
+            max-height: 92vh !important;
+            animation: sheetIn 0.22s cubic-bezier(0.16,1,0.3,1) !important;
+          }
+
+          /* Form: kategori & status stack */
+          .form-cat-status { grid-template-columns: 1fr !important; }
+
+          /* Tap target lebih besar */
+          .act-btn { min-width: 32px; min-height: 32px; }
+          * { -webkit-tap-highlight-color: transparent; }
+        }
       `}</style>
 
       <Notifs list={notifs} onRemove={removeNotif} />
 
-      <div style={{ padding: "0 24px", flexShrink: 0 }}>
-        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="page-pad" style={{ padding: "0 24px", flexShrink: 0 }}>
+        <div className="hdr" style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0 }}>PUSAT INFORMASI</p>
             <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>Kabar & Berita</h1>
@@ -544,6 +596,7 @@ export default function KelolaBerita() {
                 fontWeight: 600,
                 cursor: "pointer",
                 boxShadow: "0 0 20px rgba(29,78,216,0.3)",
+                whiteSpace: "nowrap",
               }}
             >
               {Ic.Plus} Tulis Artikel
@@ -551,21 +604,25 @@ export default function KelolaBerita() {
           )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "18px 0 0" }}>
+        <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "18px 0 0" }}>
           {[
             { label: "Total Artikel", value: news.length, accent: "#94a3b8" },
             { label: "Dipublikasi", value: published, accent: "#4ade80" },
             { label: "Draft", value: drafts, accent: "#fb923c" },
           ].map((s, i) => (
             <div key={i} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "13px 16px", animation: `fadeUp 0.3s ease ${i * 60}ms both` }}>
-              <p style={{ fontSize: 10, color: "#334155", margin: "0 0 5px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
-              <p style={{ fontSize: 20, fontWeight: 700, color: s.accent, margin: 0 }}>{s.value}</p>
+              <p className="s-lbl" style={{ fontSize: 10, color: "#334155", margin: "0 0 5px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                {s.label}
+              </p>
+              <p className="s-val" style={{ fontSize: 20, fontWeight: 700, color: s.accent, margin: 0 }}>
+                {s.value}
+              </p>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ position: "relative", flex: 1 }}>
+        <div className="sfrow" style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="s-wrap" style={{ position: "relative", flex: 1 }}>
             <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#334155" }}>{Ic.Search}</span>
             <input
               type="text"
@@ -588,32 +645,34 @@ export default function KelolaBerita() {
               }}
             />
           </div>
-          <select
-            value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-            style={{
-              background: "#0d1020",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 9,
-              padding: "8px 12px",
-              fontSize: 11,
-              fontWeight: 600,
-              color: filterCat !== "Semua" ? "#e2e8f0" : "#334155",
-              outline: "none",
-              cursor: "pointer",
-            }}
-          >
-            {CATEGORIES_FILTER.map((c) => (
-              <option key={c} value={c} style={{ background: "#0d1020" }}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>{filtered.length} artikel</span>
+          <div className="f-wrap" style={{ display: "contents" }}>
+            <select
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
+              style={{
+                background: "#0d1020",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 9,
+                padding: "8px 12px",
+                fontSize: 11,
+                fontWeight: 600,
+                color: filterCat !== "Semua" ? "#e2e8f0" : "#334155",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              {CATEGORIES_FILTER.map((c) => (
+                <option key={c} value={c} style={{ background: "#0d1020" }}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>{filtered.length} artikel</span>
+          </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px 24px" }} className="[&::-webkit-scrollbar]:hidden">
+      <div className="list-pad [&::-webkit-scrollbar]:hidden" style={{ flex: 1, overflowY: "auto", padding: "12px 24px 24px" }}>
         {isLoading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200 }}>
             <p style={{ color: "#475569", fontSize: 13 }}>Memuat data dari server...</p>
@@ -646,7 +705,7 @@ export default function KelolaBerita() {
                 >
                   <div style={{ alignSelf: "stretch", background: isPub ? cat.color : "#334155", opacity: isPub ? 0.7 : 0.4 }} />
                   <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <div className="news-meta" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: cat.bg, color: cat.color, letterSpacing: "0.04em", textTransform: "uppercase" }}>{item.category}</span>
                       {canManage && (
                         <span
@@ -664,15 +723,14 @@ export default function KelolaBerita() {
                           {item.status}
                         </span>
                       )}
-                      <span style={{ fontSize: 10, color: "#334155", marginLeft: "auto" }}>
+                      <span className="n-date" style={{ fontSize: 10, color: "#334155", marginLeft: "auto" }}>
                         {item.date} · {item.author}
                       </span>
                     </div>
                     <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: 0, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</p>
                     <p style={{ fontSize: 11, color: "#475569", margin: 0, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.excerpt || item.content}</p>
                   </div>
-
-                  <div style={{ padding: "0 16px 0 8px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div className="act-group" style={{ padding: "0 16px 0 8px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <button className="act-btn" title="Baca" onClick={() => setDetailModal({ open: true, item })} style={{ background: "rgba(255,255,255,0.05)", color: "#64748b" }}>
                       {Ic.Eye}
                     </button>

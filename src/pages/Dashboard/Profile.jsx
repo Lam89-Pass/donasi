@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-const API_BASE = import.meta.env.VITE_API_URL || "ruangdonasiapi-production.up.railway.app";
+const API_BASE = import.meta.env.VITE_API_URL || "https://ruangdonasiapi-production.up.railway.app";
 
 async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -34,7 +34,7 @@ const NOTIF_THEME = {
 
 function Notifs({ list, onRemove }) {
   return (
-    <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8, pointerEvents: "none" }}>
+    <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8, pointerEvents: "none", maxWidth: "calc(100vw - 40px)" }}>
       {list.map((n) => {
         const t = NOTIF_THEME[n.type] || NOTIF_THEME.success;
         return (
@@ -50,7 +50,7 @@ function Notifs({ list, onRemove }) {
               borderRadius: 10,
               fontSize: 13,
               fontWeight: 500,
-              minWidth: 280,
+              minWidth: 240,
               maxWidth: 360,
               display: "flex",
               alignItems: "center",
@@ -126,6 +126,7 @@ export default function Profile() {
   const [showPw, setShowPw] = useState({ current: false, newPass: false, confirm: false });
   const [savingPass, setSavingPass] = useState(false);
   const role = ROLE_CONFIG[userRole] || ROLE_CONFIG.user;
+
   useEffect(() => {
     (async () => {
       try {
@@ -247,35 +248,104 @@ export default function Profile() {
         @keyframes fadeUp  { from { opacity:0; transform:translateY(8px);  } to { opacity:1; transform:translateY(0);  } }
         .save-btn:hover:not(:disabled) { opacity:0.85; transform:scale(0.98); }
         .save-btn { transition: all 0.15s; }
+        .section-grid {
+          display: grid;
+          grid-template-columns: 200px 1fr;
+          gap: 32px;
+          margin-bottom: 28px;
+          animation: fadeUp 0.3s ease both;
+        }
+        .field-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+        .pw-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+        @media (max-width: 600px) {
+          .section-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+            margin-bottom: 20px !important;
+          }
+          .field-row {
+            grid-template-columns: 1fr !important;
+          }
+          .pw-row {
+            grid-template-columns: 1fr !important;
+          }
+          .page-header {
+            padding: 0 16px !important;
+          }
+          .page-body {
+            padding: 20px 16px 48px !important;
+          }
+          .section-desc {
+            display: none !important;
+          }
+          .section-label {
+            padding-top: 0 !important;
+          }
+        }
       `}</style>
 
       <Notifs list={notifs} onRemove={removeNotif} />
 
-      <div style={{ padding: "0 24px", flexShrink: 0 }}>
+      <div className="page-header" style={{ padding: "0 24px", flexShrink: 0 }}>
         <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0, textTransform: "uppercase" }}>Akun Saya</p>
             <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>Pengaturan Profil</h1>
           </div>
-          <span style={{ fontSize: 10, fontWeight: 700, padding: "5px 12px", borderRadius: 7, background: role.bg, color: role.color, border: `1px solid ${role.border}`, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: "5px 12px",
+              borderRadius: 7,
+              background: role.bg,
+              color: role.color,
+              border: `1px solid ${role.border}`,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              flexShrink: 0,
+              marginLeft: 12,
+            }}
+          >
             {role.label}
           </span>
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: "28px 24px 48px", display: "flex", flexDirection: "column", gap: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "20px 24px", background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, marginBottom: 28, animation: "fadeUp 0.3s ease both" }}>
+      <div className="page-body" style={{ flex: 1, padding: "28px 24px 48px", display: "flex", flexDirection: "column", gap: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            padding: "16px 20px",
+            background: "#0d1020",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 14,
+            marginBottom: 28,
+            animation: "fadeUp 0.3s ease both",
+            flexWrap: "wrap",
+          }}
+        >
           <div
             style={{
-              width: 64,
-              height: 64,
+              width: 56,
+              height: 56,
               borderRadius: "50%",
               background: `linear-gradient(135deg, ${role.color}33, ${role.color}11)`,
               border: `2px solid ${role.color}44`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: 700,
               color: role.color,
               flexShrink: 0,
@@ -285,7 +355,7 @@ export default function Profile() {
             {profile.name ? profile.name.charAt(0).toUpperCase() : "?"}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.name || "—"}</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.name || "—"}</p>
             <p style={{ fontSize: 12, color: "#334155", margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.email || "—"}</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 5, background: role.bg, color: role.color, border: `1px solid ${role.border}` }}>{role.label}</span>
@@ -295,12 +365,13 @@ export default function Profile() {
         </div>
 
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", marginBottom: 28 }} />
+
         <form onSubmit={handleSaveProfile}>
-          <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 32, marginBottom: 28, animation: "fadeUp 0.3s ease 0.05s both" }}>
-            <div style={{ paddingTop: 4 }}>
+          <div className="section-grid" style={{ animationDelay: "0.05s" }}>
+            <div className="section-label" style={{ paddingTop: 4 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: "#2563eb", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 6px" }}>Identitas</p>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", margin: "0 0 8px", lineHeight: 1.3 }}>Data Pribadi</p>
-              <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.7, margin: 0 }}>
+              <p className="section-desc" style={{ fontSize: 11, color: "#334155", lineHeight: 1.7, margin: 0 }}>
                 Informasi dasar akun Anda. Nama akan ditampilkan kepada pengguna lain.
                 {isGoogle && (
                   <>
@@ -310,8 +381,8 @@ export default function Profile() {
                 )}
               </p>
             </div>
-            <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "24px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="field-row">
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: "#334155", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                     Nama Lengkap <span style={{ color: "#ef4444" }}>*</span>
@@ -391,25 +462,27 @@ export default function Profile() {
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", marginBottom: 28 }} />
 
         {isGoogle ? (
-          <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 32, animation: "fadeUp 0.3s ease 0.1s both" }}>
-            <div style={{ paddingTop: 4 }}>
+          <div className="section-grid" style={{ animationDelay: "0.1s" }}>
+            <div className="section-label" style={{ paddingTop: 4 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 6px" }}>Keamanan</p>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", margin: "0 0 8px", lineHeight: 1.3 }}>Ubah Kata Sandi</p>
             </div>
-            <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "24px", display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px", display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
               <p style={{ fontSize: 13, color: "#334155", margin: 0, lineHeight: 1.6 }}>Akun Anda terhubung dengan Google. Kata sandi dikelola oleh Google dan tidak dapat diubah di sini.</p>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSavePassword}>
-            <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 32, animation: "fadeUp 0.3s ease 0.1s both" }}>
-              <div style={{ paddingTop: 4 }}>
+            <div className="section-grid" style={{ animationDelay: "0.1s" }}>
+              <div className="section-label" style={{ paddingTop: 4 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 6px" }}>Keamanan</p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", margin: "0 0 8px", lineHeight: 1.3 }}>Ubah Kata Sandi</p>
-                <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.7, margin: 0 }}>Gunakan kombinasi huruf besar, angka, dan simbol untuk kata sandi yang kuat.</p>
+                <p className="section-desc" style={{ fontSize: 11, color: "#334155", lineHeight: 1.7, margin: 0 }}>
+                  Gunakan kombinasi huruf besar, angka, dan simbol untuk kata sandi yang kuat.
+                </p>
               </div>
-              <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "24px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: "#334155", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                     Kata Sandi Saat Ini <span style={{ color: "#ef4444" }}>*</span>
@@ -434,7 +507,7 @@ export default function Profile() {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="pw-row">
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     <label style={{ fontSize: 10, fontWeight: 700, color: "#334155", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       Kata Sandi Baru <span style={{ color: "#ef4444" }}>*</span>

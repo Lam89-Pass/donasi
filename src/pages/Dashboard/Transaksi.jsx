@@ -48,11 +48,68 @@ function SkeletonRow({ cols }) {
   );
 }
 
+function MobileCard({ t, idx, itemsPerPage, currentPage }) {
+  const sc = getStatusCfg(t.status);
+  const num = (currentPage - 1) * itemsPerPage + idx + 1;
+  return (
+    <div
+      style={{
+        background: "#0d1020",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 12,
+        padding: "14px",
+        marginBottom: 8,
+        animation: `fadeUp 0.25s ease ${idx * 25}ms both`,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 10, color: "#334155", fontWeight: 600 }}>#{num}</span>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "#60a5fa", letterSpacing: "0.05em" }}>{t.id}</span>
+        </div>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "4px 10px",
+            borderRadius: 6,
+            background: sc.bg,
+            border: `1px solid ${sc.border}`,
+            color: sc.color,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: sc.dot, display: "inline-block", ...(t.status === "Pending" ? { animation: "pulseDot 1.8s ease-in-out infinite" } : {}) }} />
+          {t.status}
+        </span>
+      </div>
+      <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: "0 0 3px" }}>{t.user}</p>
+      <p style={{ fontSize: 11, color: "#475569", margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.program}</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, color: "#334155", fontWeight: 500 }}>{t.date}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>{fmtRp(t.amount)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Transaksi() {
   const [userRole, setUserRole] = useState("user");
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     setUserRole(localStorage.getItem("devRole") || "user");
@@ -105,8 +162,9 @@ export default function Transaksi() {
   const filteredData = useMemo(() => {
     return transactions.filter((t) => t.id.toLowerCase().includes(searchTerm.toLowerCase()) || t.program.toLowerCase().includes(searchTerm.toLowerCase()) || t.user.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [transactions, searchTerm]);
+
   const [sortKey, setSortKey] = useState("id");
-  const [sortDir, setSortDir] = useState("desc"); 
+  const [sortDir, setSortDir] = useState("desc");
   const [statusFilter, setStatusFilter] = useState("Semua");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,11 +213,11 @@ export default function Transaksi() {
   const currentItems = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const pageRange = useMemo(() => {
-    const delta = 2,
+    const delta = isMobile ? 1 : 2,
       range = [];
     for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) range.push(i);
     return range;
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, isMobile]);
 
   const SortIcon = ({ col }) => {
     if (sortKey !== col) return <span style={{ opacity: 0.25, marginLeft: 4 }}>{Ic.SortBoth}</span>;
@@ -198,43 +256,65 @@ export default function Transaksi() {
         .pg-btn:disabled { color:#1e293b; cursor:not-allowed; }
         .pg-btn.active { background:#1d4ed8; border-color:#1d4ed8; color:#fff; font-weight:700; }
         select option { background: #0d1020; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .filters-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .filter-group { display: flex; align-items: center; gap: 6px; }
+        @media (max-width: 767px) {
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .filters-row { gap: 8px; }
+          .filter-group { flex: 1 1 calc(50% - 4px); min-width: 0; }
+          .filter-group select { flex: 1; min-width: 0; width: 100%; }
+          .search-wrap { min-width: 0 !important; width: 100% !important; }
+          .count-label { display: none; }
+          .pg-footer { flex-direction: column; gap: 8px; align-items: center !important; }
+        }
       `}</style>
 
-      <div style={{ padding: "0 24px", flexShrink: 0 }}>
-        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      <div style={{ padding: isMobile ? "0 14px" : "0 24px", flexShrink: 0 }}>
+        <div style={{ height: isMobile ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0, textTransform: "uppercase" }}>Financial Ledger</p>
-            <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>{userRole === "user" ? "Riwayat Donasi" : "Data Transaksi"}</h1>
+            <h1 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>{userRole === "user" ? "Riwayat Donasi" : "Data Transaksi"}</h1>
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, padding: "18px 0 0" }}>
+        <div className="stats-grid" style={{ padding: "14px 0 0" }}>
           {[
             { label: "Total Volume", value: stats.total, sub: `${transactions.length} transaksi`, accent: "#94a3b8" },
             { label: "Berhasil", value: stats.sukses, sub: `${countStatus("Sukses")} sukses`, accent: "#4ade80" },
             { label: "Menunggu", value: stats.pending, sub: `${countStatus("Pending")} pending`, accent: "#fbbf24" },
             { label: "Gagal", value: stats.gagal, sub: `${countStatus("Gagal")} gagal`, accent: "#f87171" },
           ].map((s, i) => (
-            <div key={i} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "13px 16px", animation: `fadeUp 0.3s ease ${i * 50}ms both`, borderTop: `2px solid ${s.accent}30` }}>
-              <p style={{ fontSize: 10, color: "#334155", margin: "0 0 5px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
+            <div
+              key={i}
+              style={{
+                background: "#0d1020",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 12,
+                padding: isMobile ? "10px 12px" : "13px 16px",
+                animation: `fadeUp 0.3s ease ${i * 50}ms both`,
+                borderTop: `2px solid ${s.accent}30`,
+              }}
+            >
+              <p style={{ fontSize: 9, color: "#334155", margin: "0 0 4px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
               {isLoading ? (
-                <span className="skeleton" style={{ display: "block", width: "80%", height: 20, borderRadius: 5, margin: "6px 0 4px" }} />
+                <span className="skeleton" style={{ display: "block", width: "80%", height: isMobile ? 16 : 20, borderRadius: 5, margin: "5px 0 3px" }} />
               ) : (
-                <p style={{ fontSize: 17, fontWeight: 700, color: s.accent, margin: "0 0 3px", letterSpacing: "-0.02em" }}>{fmtRp(s.value)}</p>
+                <p style={{ fontSize: isMobile ? 13 : 17, fontWeight: 700, color: s.accent, margin: "0 0 2px", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fmtRp(s.value)}</p>
               )}
               <p style={{ fontSize: 10, color: "#475569", margin: 0, fontWeight: 500 }}>{s.sub}</p>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
-          <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+        <div className="filters-row" style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="search-wrap" style={{ position: "relative", flex: 1, minWidth: 200 }}>
             <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#334155" }}>{Ic.Search}</span>
             <input
               type="text"
               value={searchTerm}
               onChange={handleSearch}
-              placeholder="Cari ID transaksi, nama donatur, atau program..."
+              placeholder={isMobile ? "Cari transaksi..." : "Cari ID transaksi, nama donatur, atau program..."}
               style={{
                 width: "100%",
                 background: "#0d1020",
@@ -255,7 +335,7 @@ export default function Transaksi() {
             />
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="filter-group">
             <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>Urutan</span>
             <select
               value={sortKey === "id" ? (sortDir === "desc" ? "terbaru" : "terlama") : "terbaru"}
@@ -276,7 +356,7 @@ export default function Transaksi() {
             </select>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="filter-group">
             <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>Status</span>
             <select value={statusFilter} onChange={handleStatusFilter} style={SELECT_STYLE}>
               <option value="Semua">Semua</option>
@@ -286,7 +366,7 @@ export default function Transaksi() {
             </select>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="filter-group">
             <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap" }}>Tampilkan</span>
             <select value={itemsPerPage} onChange={handleItemsPerPage} style={SELECT_STYLE}>
               {[10, 25, 50, 100].map((n) => (
@@ -297,101 +377,131 @@ export default function Transaksi() {
             </select>
           </div>
 
-          <span style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap", marginLeft: "auto" }}>{sortedData.length} transaksi</span>
+          <span className="count-label" style={{ fontSize: 11, color: "#334155", whiteSpace: "nowrap", marginLeft: "auto" }}>
+            {sortedData.length} transaksi
+          </span>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px 0", scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.07) transparent" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <th style={{ padding: "10px 16px", textAlign: "left", width: 40 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "#334155", letterSpacing: "0.07em", textTransform: "uppercase" }}>#</span>
-              </th>
-              {[
-                { key: "id", label: "ID Transaksi" },
-                { key: "user", label: "Donatur" },
-                { key: "program", label: "Program" },
-                { key: "date", label: "Tanggal" },
-                { key: "amount", label: "Jumlah" },
-                { key: "status", label: "Status", right: true },
-              ].map(({ key, label, right }) => (
-                <th key={key} style={{ padding: "10px 16px", textAlign: right ? "right" : "left" }}>
-                  <button
-                    className={`col-sort${sortKey === key ? " active" : ""}`}
-                    onClick={() => handleSort(key)}
-                    style={{ marginLeft: right ? "auto" : 0, display: right ? "flex" : "inline-flex", justifyContent: right ? "flex-end" : "flex-start" }}
-                  >
-                    {label}
-                    <SortIcon col={key} />
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
+      <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "10px 14px 0" : "12px 24px 0", scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.07) transparent" }}>
+        {isMobile ? (
+          <div>
             {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} cols={[20, 80, 100, 140, 70, 80, 65]} />)
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 14, marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <span className="skeleton" style={{ display: "inline-block", width: 80, height: 12, borderRadius: 5 }} />
+                    <span className="skeleton" style={{ display: "inline-block", width: 55, height: 20, borderRadius: 6 }} />
+                  </div>
+                  <span className="skeleton" style={{ display: "block", width: "60%", height: 13, borderRadius: 5, marginBottom: 6 }} />
+                  <span className="skeleton" style={{ display: "block", width: "80%", height: 11, borderRadius: 5, marginBottom: 10 }} />
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span className="skeleton" style={{ display: "inline-block", width: 70, height: 11, borderRadius: 5 }} />
+                    <span className="skeleton" style={{ display: "inline-block", width: 90, height: 14, borderRadius: 5 }} />
+                  </div>
+                </div>
+              ))
             ) : currentItems.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding: "60px 0", textAlign: "center" }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: "0 0 6px" }}>Tidak ada transaksi</p>
-                  <p style={{ fontSize: 11, color: "#334155", margin: 0 }}>Coba sesuaikan filter atau kata kunci pencarian.</p>
-                </td>
-              </tr>
+              <div style={{ padding: "60px 0", textAlign: "center" }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: "0 0 6px" }}>Tidak ada transaksi</p>
+                <p style={{ fontSize: 11, color: "#334155", margin: 0 }}>Coba sesuaikan filter atau kata kunci pencarian.</p>
+              </div>
             ) : (
-              currentItems.map((t, idx) => {
-                const sc = getStatusCfg(t.status);
-                const num = (currentPage - 1) * itemsPerPage + idx + 1;
-                return (
-                  <tr key={t.id} className="row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", animation: `fadeUp 0.25s ease ${idx * 25}ms both` }}>
-                    <td style={{ padding: "13px 16px", fontSize: 11, color: "#334155" }}>{num}</td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "#60a5fa", letterSpacing: "0.05em" }}>{t.id}</span>
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>{t.user}</p>
-                    </td>
-                    <td style={{ padding: "13px 16px", maxWidth: 200 }}>
-                      <p style={{ fontSize: 12, color: "#475569", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.program}</p>
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <span style={{ fontSize: 11, color: "#334155", fontWeight: 500 }}>{t.date}</span>
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>{fmtRp(t.amount)}</span>
-                    </td>
-                    <td style={{ padding: "13px 16px", textAlign: "right" }}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          padding: "4px 10px",
-                          borderRadius: 6,
-                          background: sc.bg,
-                          border: `1px solid ${sc.border}`,
-                          color: sc.color,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: sc.dot, display: "inline-block", ...(t.status === "Pending" ? { animation: "pulseDot 1.8s ease-in-out infinite" } : {}) }} />
-                        {t.status}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
+              currentItems.map((t, idx) => <MobileCard key={t.id} t={t} idx={idx} itemsPerPage={itemsPerPage} currentPage={currentPage} />)
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                <th style={{ padding: "10px 16px", textAlign: "left", width: 40 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "#334155", letterSpacing: "0.07em", textTransform: "uppercase" }}>#</span>
+                </th>
+                {[
+                  { key: "id", label: "ID Transaksi" },
+                  { key: "user", label: "Donatur" },
+                  { key: "program", label: "Program" },
+                  { key: "date", label: "Tanggal" },
+                  { key: "amount", label: "Jumlah" },
+                  { key: "status", label: "Status", right: true },
+                ].map(({ key, label, right }) => (
+                  <th key={key} style={{ padding: "10px 16px", textAlign: right ? "right" : "left" }}>
+                    <button
+                      className={`col-sort${sortKey === key ? " active" : ""}`}
+                      onClick={() => handleSort(key)}
+                      style={{ marginLeft: right ? "auto" : 0, display: right ? "flex" : "inline-flex", justifyContent: right ? "flex-end" : "flex-start" }}
+                    >
+                      {label}
+                      <SortIcon col={key} />
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} cols={[20, 80, 100, 140, 70, 80, 65]} />)
+              ) : currentItems.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: "60px 0", textAlign: "center" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: "0 0 6px" }}>Tidak ada transaksi</p>
+                    <p style={{ fontSize: 11, color: "#334155", margin: 0 }}>Coba sesuaikan filter atau kata kunci pencarian.</p>
+                  </td>
+                </tr>
+              ) : (
+                currentItems.map((t, idx) => {
+                  const sc = getStatusCfg(t.status);
+                  const num = (currentPage - 1) * itemsPerPage + idx + 1;
+                  return (
+                    <tr key={t.id} className="row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", animation: `fadeUp 0.25s ease ${idx * 25}ms both` }}>
+                      <td style={{ padding: "13px 16px", fontSize: 11, color: "#334155" }}>{num}</td>
+                      <td style={{ padding: "13px 16px" }}>
+                        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "#60a5fa", letterSpacing: "0.05em" }}>{t.id}</span>
+                      </td>
+                      <td style={{ padding: "13px 16px" }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>{t.user}</p>
+                      </td>
+                      <td style={{ padding: "13px 16px", maxWidth: 200 }}>
+                        <p style={{ fontSize: 12, color: "#475569", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.program}</p>
+                      </td>
+                      <td style={{ padding: "13px 16px" }}>
+                        <span style={{ fontSize: 11, color: "#334155", fontWeight: 500 }}>{t.date}</span>
+                      </td>
+                      <td style={{ padding: "13px 16px" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>{fmtRp(t.amount)}</span>
+                      </td>
+                      <td style={{ padding: "13px 16px", textAlign: "right" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            padding: "4px 10px",
+                            borderRadius: 6,
+                            background: sc.bg,
+                            border: `1px solid ${sc.border}`,
+                            color: sc.color,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: sc.dot, display: "inline-block", ...(t.status === "Pending" ? { animation: "pulseDot 1.8s ease-in-out infinite" } : {}) }} />
+                          {t.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {!isLoading && totalPages > 0 && (
-        <div style={{ padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+        <div className="pg-footer" style={{ padding: isMobile ? "12px 14px" : "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
           <p style={{ fontSize: 11, color: "#334155", margin: 0 }}>
             Menampilkan <span style={{ color: "#94a3b8", fontWeight: 600 }}>{currentItems.length}</span> dari <span style={{ color: "#94a3b8", fontWeight: 600 }}>{sortedData.length}</span> data
           </p>

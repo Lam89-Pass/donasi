@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../../api";
-import { GoogleLogin } from "@react-oauth/google"; 
+import { GoogleLogin } from "@react-oauth/google";
 import logRegImg from "../../assets/log-reg.png";
 
 export default function Login() {
@@ -13,6 +13,18 @@ export default function Login() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const redirectByRole = (userData) => {
+    try {
+      const token = userData.token;
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const role = payload.role || "user";
+      if (role === "admin" || role === "superadmin") {
+        return "/dashboard";
+      }
+    } catch (e) {}
+    return "/";
   };
 
   const handleSubmit = async (e) => {
@@ -32,7 +44,7 @@ export default function Login() {
         toast.success("Berhasil masuk! Selamat datang kembali 👋", {
           duration: 2000,
         });
-        setTimeout(() => navigate("/"), 1200);
+        setTimeout(() => navigate(redirectByRole(response.data.data)), 1200);
       }
     } catch (error) {
       setIsLoading(false);
@@ -52,7 +64,7 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(response.data.data));
         setIsLoading(false);
         toast.success("Berhasil masuk dengan Google! 👋", { duration: 2000 });
-        setTimeout(() => navigate("/"), 1200);
+        setTimeout(() => navigate(redirectByRole(response.data.data)), 1200);
       }
     } catch (error) {
       setIsLoading(false);
@@ -92,7 +104,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Email atau Nomor HP/WA</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Email atau Nomor HP</label>
               <input
                 type="text"
                 name="identifier"
@@ -141,9 +153,10 @@ export default function Login() {
                 <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-ramadhan-green focus:ring-ramadhan-green transition-all cursor-pointer" />
                 Ingat Saya
               </label>
-              <a href="#" className="text-ramadhan-green hover:text-green-700 font-bold transition-colors">
+
+              <Link to="/forgot-password" className="text-ramadhan-green hover:text-green-700 font-bold transition-colors">
                 Lupa Sandi?
-              </a>
+              </Link>
             </div>
 
             <button

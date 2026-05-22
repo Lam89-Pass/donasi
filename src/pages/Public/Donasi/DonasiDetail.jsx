@@ -96,7 +96,7 @@ export default function DonasiDetail() {
   const catColor = CATEGORY_COLORS[item.kategori] || CATEGORY_COLORS["Sosial"];
   const hasImage = item.imgSeed && item.imgSeed.trim() !== "";
 
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "ruangdonasiapi-production.up.railway.app";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://ruangdonasiapi-production.up.railway.app";
 
   const imgSrc = hasImage ? (item.imgSeed.startsWith("http") ? item.imgSeed : `${BASE_URL}/${item.imgSeed.replace(/^\/+/, "")}`) : null;
 
@@ -196,37 +196,6 @@ export default function DonasiDetail() {
         }
         .donasi-detail .btn-outline:hover { background: #f0fdf4; }
 
-        .donasi-detail .share-overlay {
-          position: fixed; inset: 0; z-index: 9999;
-          background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
-          display: flex; align-items: flex-end; justify-content: center;
-          padding: 0 0 0 0;
-          animation: fadeIn 0.2s ease;
-        }
-        @media (min-width: 640px) {
-          .donasi-detail .share-overlay { align-items: center; padding: 24px; }
-        }
-        .donasi-detail .share-panel {
-          background: #fff; border-radius: 24px 24px 0 0;
-          width: 100%; max-width: 440px; padding: 28px;
-          animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @media (min-width: 640px) {
-          .donasi-detail .share-panel { border-radius: 24px; animation: scaleIn 0.25s ease; }
-        }
-
-        .donasi-detail .share-icon-btn {
-          display: flex; flex-direction: column; align-items: center; gap: 6px;
-          cursor: pointer; text-decoration: none;
-        }
-        .donasi-detail .share-icon-btn span { font-size: 10px; font-weight: 600; color: #6b7280; }
-        .donasi-detail .share-icon-circle {
-          width: 52px; height: 52px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          color: #fff; transition: transform 0.2s;
-        }
-        .donasi-detail .share-icon-btn:hover .share-icon-circle { transform: scale(1.08); }
-
         .donasi-detail .penggalang-row {
           display: flex; align-items: center; gap: 12px;
           padding: 16px 0; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
@@ -244,9 +213,42 @@ export default function DonasiDetail() {
           flex-wrap: wrap; margin-bottom: 12px;
         }
 
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-        @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes scaleIn { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+        /* === SHARE MODAL — GLOBAL (tanpa prefix .donasi-detail) === */
+        .share-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          animation: shareOverlayFadeIn 0.2s ease;
+        }
+        .share-panel {
+          background: #fff;
+          border-radius: 24px;
+          width: 100%;
+          max-width: 440px;
+          padding: 28px;
+          animation: sharePanelScale 0.25s cubic-bezier(0.34,1.56,0.64,1);
+          font-family: 'Poppins', sans-serif;
+        }
+        .share-icon-btn {
+          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          cursor: pointer; text-decoration: none; border: none; background: none; padding: 0;
+        }
+        .share-icon-btn span { font-size: 10px; font-weight: 600; color: #6b7280; font-family: 'Poppins', sans-serif; }
+        .share-icon-circle {
+          width: 52px; height: 52px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; transition: transform 0.2s;
+        }
+        .share-icon-btn:hover .share-icon-circle { transform: scale(1.08); }
+
+        @keyframes shareOverlayFadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes sharePanelScale { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
 
         @media (min-width: 1024px) {
           .donasi-detail .main-grid {
@@ -476,7 +478,7 @@ export default function DonasiDetail() {
       </div>
 
       {isShareModalOpen && (
-        <div className="donasi-detail share-overlay" onClick={() => setIsShareModalOpen(false)}>
+        <div className="share-overlay" onClick={() => setIsShareModalOpen(false)}>
           <div className="share-panel" onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, background: "#e5e7eb", borderRadius: 99, margin: "0 auto 20px" }} />
 
@@ -522,7 +524,7 @@ export default function DonasiDetail() {
                 <span>Telegram</span>
               </a>
 
-              <button className="share-icon-btn" onClick={handleCopyLink} style={{ border: "none", background: "none", padding: 0 }}>
+              <button className="share-icon-btn" onClick={handleCopyLink}>
                 <div className="share-icon-circle" style={{ background: "#f3f4f6" }}>
                   <svg width="20" height="20" fill="none" stroke="#374151" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />

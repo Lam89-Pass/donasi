@@ -5,6 +5,8 @@ import Footer from "./components/layout/Footer";
 import Sidebar from "./components/layout/Sidebar";
 import Home from "./pages/Public/Home/Home";
 import Login from "./pages/Auth/Login";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
 import Register from "./pages/Auth/Register";
 import Berita from "./pages/Public/Berita/Berita";
 import Donasi from "./pages/Public/Donasi/Donasi";
@@ -14,6 +16,7 @@ import ProgramDonasi from "./pages/Dashboard/ProgramDonasi";
 import KelolaBerita from "./pages/Dashboard/KelolaBerita";
 import Transaksi from "./pages/Dashboard/Transaksi";
 import Profile from "./pages/Dashboard/Profile";
+import FAQ from "./pages/Public/FAQ";
 import BeritaDetail from "./pages/Public/Berita/BeritaDetail";
 import DonasiDetail from "./pages/Public/Donasi/DonasiDetail";
 import ProsesDonasi from "./pages/Public/Donasi/ProsesDonasi";
@@ -21,8 +24,7 @@ import ProsesDonasi from "./pages/Public/Donasi/ProsesDonasi";
 function AppContent() {
   const location = useLocation();
 
-  const isNoLayoutPage = location.pathname === "/login" || location.pathname === "/register" || location.pathname.startsWith("/dashboard");
-
+  const isNoLayoutPage = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password" || location.pathname === "/reset-password" || location.pathname.startsWith("/dashboard");
   const isDashboardArea = location.pathname.startsWith("/dashboard");
 
   return (
@@ -47,9 +49,12 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/register" element={<Register />} />
           <Route path="/berita" element={<Berita />} />
           <Route path="/berita/:id" element={<BeritaDetail />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/donasi" element={<Donasi />} />
           <Route path="/donasi/:id" element={<DonasiDetail />} />
           <Route path="/donasi/:id/bayar" element={<ProsesDonasi />} />

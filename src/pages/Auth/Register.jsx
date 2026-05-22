@@ -137,7 +137,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Nomor HP/WhatsApp</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nomor HP</label>
               <div className="flex gap-2">
                 <select
                   name="country_code"

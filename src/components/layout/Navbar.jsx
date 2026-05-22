@@ -35,6 +35,9 @@ export default function Navbar() {
   const searchDesktopRef = useRef(null);
   const searchMobileRef = useRef(null);
 
+  // Cache semua data agar tidak fetch ulang tiap ketik
+  const allDataCache = useRef({ articles: null, campaigns: null });
+
   const profileRefDesktop = useRef(null);
   const profileRefMobile = useRef(null);
   const token = localStorage.getItem("token");
@@ -68,57 +71,94 @@ export default function Navbar() {
       return;
     }
 
-    const controller = new AbortController();
-
     const fetchResults = async () => {
       setIsSearchLoading(true);
       try {
-        const [beritaRes, donasiRes] = await Promise.allSettled([
-          fetch(`/api/berita?search=${encodeURIComponent(q)}&limit=5`, { signal: controller.signal }),
-          fetch(`/api/donasi?search=${encodeURIComponent(q)}&limit=5`, { signal: controller.signal }),
-        ]);
-
-        const results = [];
-
-        if (beritaRes.status === "fulfilled" && beritaRes.value.ok) {
-          const data = await beritaRes.value.json();
-          const items = data?.data ?? data ?? [];
-          items.forEach((item) => {
-            results.push({
-              label: item.judul || item.title || "Berita",
-              url: `/berita/${item.slug || item.id}`,
-              type: "berita",
+        // Fetch articles jika belum di-cache
+        if (!allDataCache.current.articles) {
+          try {
+            const res = await fetch("/api/articles", {
+              headers: { "ngrok-skip-browser-warning": "true" },
             });
-          });
+            if (res.ok) {
+              const json = await res.json();
+              allDataCache.current.articles = json?.data ?? json ?? [];
+            } else {
+              allDataCache.current.articles = [];
+            }
+          } catch {
+            allDataCache.current.articles = [];
+          }
         }
 
-        if (donasiRes.status === "fulfilled" && donasiRes.value.ok) {
-          const data = await donasiRes.value.json();
-          const items = data?.data ?? data ?? [];
-          items.forEach((item) => {
+        // Fetch campaigns jika belum di-cache
+        if (!allDataCache.current.campaigns) {
+          try {
+            const res = await fetch("/api/campaigns", {
+              headers: { "ngrok-skip-browser-warning": "true" },
+            });
+            if (res.ok) {
+              const json = await res.json();
+              allDataCache.current.campaigns = json?.data ?? json ?? [];
+            } else {
+              allDataCache.current.campaigns = [];
+            }
+          } catch {
+            allDataCache.current.campaigns = [];
+          }
+        }
+
+        const lowerQ = q.toLowerCase();
+        const results = [];
+
+        // Filter static pages
+        const staticMatches = STATIC_PAGES.filter((p) => p.label.toLowerCase().includes(lowerQ));
+        results.push(...staticMatches);
+
+        // Filter articles — cocokkan di title, content, category, author
+        const articles = allDataCache.current.articles || [];
+        articles.forEach((item) => {
+          const title = (item.title || item.Title || "").toLowerCase();
+          const content = (item.content || item.Content || "").toLowerCase();
+          const category = (item.category || item.Category || "").toLowerCase();
+          const author = (item.author || "").toLowerCase();
+          if (title.includes(lowerQ) || content.includes(lowerQ) || category.includes(lowerQ) || author.includes(lowerQ)) {
             results.push({
-              label: item.judul || item.nama || item.title || "Program Donasi",
+              label: item.title || item.Title || "Berita",
+              url: `/berita/${item.slug || item.id || item.ID}`,
+              type: "berita",
+            });
+          }
+        });
+
+        // Filter campaigns — cocokkan di judul, deskripsi, kategori, penggalang, daerah
+        const campaigns = allDataCache.current.campaigns || [];
+        campaigns.forEach((item) => {
+          const judul = (item.judul || item.title || "").toLowerCase();
+          const deskripsi = (item.deskripsi || item.description || "").toLowerCase();
+          const kategori = (item.kategori || item.category || "").toLowerCase();
+          const penggalang = (item.penggalang || item.author || "").toLowerCase();
+          const daerah = (item.daerah || item.region || "").toLowerCase();
+          if (judul.includes(lowerQ) || deskripsi.includes(lowerQ) || kategori.includes(lowerQ) || penggalang.includes(lowerQ) || daerah.includes(lowerQ)) {
+            results.push({
+              label: item.judul || item.title || "Program Donasi",
               url: `/donasi/${item.slug || item.id}`,
               type: "donasi",
             });
-          });
-        }
+          }
+        });
 
-        const staticMatches = STATIC_PAGES.filter((p) => p.label.toLowerCase().includes(q.toLowerCase()));
-        setSearchResults([...staticMatches, ...results]);
+        setSearchResults(results.slice(0, 10));
       } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Gagal mengambil hasil pencarian:", err);
-          const staticMatches = STATIC_PAGES.filter((p) => p.label.toLowerCase().includes(debouncedQuery.toLowerCase()));
-          setSearchResults(staticMatches);
-        }
+        console.error("Gagal mengambil hasil pencarian:", err);
+        const staticMatches = STATIC_PAGES.filter((p) => p.label.toLowerCase().includes(debouncedQuery.toLowerCase()));
+        setSearchResults(staticMatches);
       } finally {
         setIsSearchLoading(false);
       }
     };
 
     fetchResults();
-    return () => controller.abort();
   }, [debouncedQuery]);
 
   const handleSearchChange = (e) => {
@@ -224,17 +264,24 @@ export default function Navbar() {
               { name: "Beranda", url: "/" },
               { name: "Berita", url: "/berita" },
               { name: "Donasi", url: "/donasi" },
-            ].map((link) => (
-              <Link
-                key={link.name}
-                to={link.url}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ${
-                  isDarkHeader ? "text-white hover:text-green-100 hover:bg-white/20" : "text-gray-700 hover:text-[#1a7a4a] hover:bg-[#1a7a4a]/10"
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            ].map((link) => {
+              const isActive = location.pathname === link.url || (link.url !== "/" && location.pathname.startsWith(link.url));
+              return (
+                <Link
+                  key={link.name}
+                  to={link.url}
+                  className={`relative px-5 py-2.5 text-sm font-semibold tracking-wide transition-all duration-300 group
+        ${isDarkHeader ? (isActive ? "text-white" : "text-white/70 hover:text-white") : isActive ? "text-[#1a7a4a]" : "text-gray-600 hover:text-[#1a7a4a]"}`}
+                >
+                  {link.name}
+                  <span
+                    className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300
+        ${isDarkHeader ? "bg-white" : "bg-[#1a7a4a]"}
+        ${isActive ? "w-4/5" : "w-0 group-hover:w-4/5"}`}
+                  />
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex items-center space-x-4">
@@ -312,7 +359,7 @@ export default function Navbar() {
                         </Link>
 
                         {userRole !== "superadmin" && (
-                          <Link to="/dashboard" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-[#1a7a4a] transition-colors group">
+                          <Link to="/dashboard/transactions" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-[#1a7a4a] transition-colors group">
                             <svg className="w-4 h-4 text-gray-400 group-hover:text-[#1a7a4a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
