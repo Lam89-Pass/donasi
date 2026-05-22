@@ -14,7 +14,7 @@ function formatCompactRupiah(num) {
   return `Rp ${num}`;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://solving-felt-rush-plant.trycloudflare.com";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "ruangdonasiapi-production.up.railway.app";
 
 function DonationCard({ id, kategori, lokasi, judul, terkumpul, target, persen, sisaWaktu, gambar, berakhir }) {
   const navigate = useNavigate();

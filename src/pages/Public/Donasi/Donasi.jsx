@@ -68,13 +68,9 @@ function DonationCard({ id, kategori, judul, terkumpul, target, daerah, sisaHari
   const urgent = isUrgent || sisaHari <= 5;
   const donasiState = { id, kategori, judul, terkumpul, target, daerah, sisaHari };
   const hasImage = imgSeed && imgSeed.trim() !== "";
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://solving-felt-rush-plant.trycloudflare.com";
-const imgSrc = hasImage
-  ? imgSeed.startsWith("http")
-    ? imgSeed 
-    : `${BASE_URL}/${imgSeed.replace(/^\/+/, "")}` 
-  : null;
-  
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "ruangdonasiapi-production.up.railway.app";
+  const imgSrc = hasImage ? (imgSeed.startsWith("http") ? imgSeed : `${BASE_URL}/${imgSeed.replace(/^\/+/, "")}`) : null;
+
   return (
     <div
       style={{

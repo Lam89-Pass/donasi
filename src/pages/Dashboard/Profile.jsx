@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-const API_BASE = import.meta.env.VITE_API_URL || "https://solving-felt-rush-plant.trycloudflare.com";
+const API_BASE = import.meta.env.VITE_API_URL || "ruangdonasiapi-production.up.railway.app";
 
 async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");

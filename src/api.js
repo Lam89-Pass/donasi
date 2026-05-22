@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://solving-felt-rush-plant.trycloudflare.com";
+const BASE_URL = "ruangdonasiapi-production.up.railway.app";
 
 const api = axios.create({
   baseURL: BASE_URL,

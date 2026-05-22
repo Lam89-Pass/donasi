@@ -16,7 +16,7 @@ const CATEGORY_COLORS = {
   Sosial: { bg: "#f0fdf4", text: "#15803d", dot: "#22c55e" },
   Pendidikan: { bg: "#eff6ff", text: "#1d4ed8", dot: "#60a5fa" },
   Bencana: { bg: "#fff7ed", text: "#c2410c", dot: "#fb923c" },
-  "Bencana Alam": { bg: "#fff7ed", text: "#c2410c", dot: "#fb923c" }, 
+  "Bencana Alam": { bg: "#fff7ed", text: "#c2410c", dot: "#fb923c" },
   Kesehatan: { bg: "#fdf4ff", text: "#7e22ce", dot: "#c084fc" },
   Ekonomi: { bg: "#fefce8", text: "#854d0e", dot: "#fbbf24" },
 };
@@ -96,13 +96,9 @@ export default function DonasiDetail() {
   const catColor = CATEGORY_COLORS[item.kategori] || CATEGORY_COLORS["Sosial"];
   const hasImage = item.imgSeed && item.imgSeed.trim() !== "";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://solving-felt-rush-plant.trycloudflare.com";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "ruangdonasiapi-production.up.railway.app";
 
-const imgSrc = hasImage
-  ? item.imgSeed.startsWith("http")
-    ? item.imgSeed
-    : `${BASE_URL}/${item.imgSeed.replace(/^\/+/, "")}` 
-  : null;
+  const imgSrc = hasImage ? (item.imgSeed.startsWith("http") ? item.imgSeed : `${BASE_URL}/${item.imgSeed.replace(/^\/+/, "")}`) : null;
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = `Yuk ikut patungan donasi untuk: ${item.judul}`;
@@ -352,8 +348,8 @@ const imgSrc = hasImage
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 28 }}>
                     {[
-                      { label: "Donatur", value: (item.donatur || 0).toLocaleString("id-ID"), },
-                      { label: "Hari Tersisa", value: isEnded ? "Berakhir" : `${item.sisaHari}`,  },
+                      { label: "Donatur", value: (item.donatur || 0).toLocaleString("id-ID") },
+                      { label: "Hari Tersisa", value: isEnded ? "Berakhir" : `${item.sisaHari}` },
                       { label: "Tercapai", value: `${persen}%` },
                     ].map((s) => (
                       <div key={s.label} style={{ background: "#f9fafb", borderRadius: 12, padding: "14px 12px", textAlign: "center", border: "1px solid #f3f4f6" }}>

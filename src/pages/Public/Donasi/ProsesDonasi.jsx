@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "https://solving-felt-rush-plant.trycloudflare.com";
+const BASE_URL = import.meta.env.VITE_API_URL || "ruangdonasiapi-production.up.railway.app";
 const getAuthToken = () => localStorage.getItem("token") || sessionStorage.getItem("token") || null;
 const PAID_STATUSES = ["paid", "success", "settlement", "capture", "lunas"];
 const donasiData = [
