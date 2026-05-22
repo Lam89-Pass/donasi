@@ -26,8 +26,8 @@ const steps = [
   { number: 3, label: "Pembayaran" },
 ];
 
-const POLL_INTERVAL = 5000; 
-const POLL_TIMEOUT = 5 * 60 * 1000; 
+const POLL_INTERVAL = 5000;
+const POLL_TIMEOUT = 5 * 60 * 1000;
 
 export default function ProsesDonasi() {
   const { id } = useParams();
@@ -90,7 +90,7 @@ export default function ProsesDonasi() {
         const res = await fetch(`${BASE_URL}/api/transactions/${txData.transaction_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) return; 
+        if (!res.ok) return;
         const json = await res.json();
         const status = (json?.data?.status || json?.status || "").toLowerCase();
 
@@ -98,8 +98,7 @@ export default function ProsesDonasi() {
           stopPolling("confirmed");
           setShowSuccess(true);
         }
-      } catch {
-      }
+      } catch {}
     };
 
     checkStatus();
@@ -154,7 +153,7 @@ export default function ProsesDonasi() {
   const createTransaction = async () => {
     const token = getAuthToken();
     if (!token) {
-      navigate("/auth/login");
+      navigate("/login");
       return null;
     }
     setIsLoading(true);
@@ -346,7 +345,7 @@ export default function ProsesDonasi() {
 
               <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 text-center border border-gray-100">
                 Sudah punya akun?{" "}
-                <button onClick={() => navigate("/auth/login")} className="text-green-700 font-bold hover:underline">
+                <button onClick={() => navigate("/login")} className="text-green-700 font-bold hover:underline">
                   Masuk di sini
                 </button>{" "}
                 atau lengkapi data di bawah.
