@@ -1,265 +1,302 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import api from "../../../api";
+
+const categories = ["Semua", "Kemanusiaan", "Sosial", "Pendidikan", "Kesehatan", "Bencana Alam", "Infrastruktur", "Ekonomi"];
+
+const sortOptions = [
+  { label: "Terbaru", value: "newest" },
+  { label: "Terlama", value: "oldest" },
+  { label: "Baca Tercepat", value: "shortest" },
+];
+
+const ITEMS_PER_PAGE = 6;
 
 export default function Berita() {
+  const [newsData, setNewsData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
+
   const [activeCategory, setActiveCategory] = useState("Semua");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
-
-  const categories = ["Semua", "Penyaluran", "Kemanusiaan", "Inspirasi", "Edukasi"];
-
-  const newsData = [
-    {
-      id: 1,
-      title: "Bantuan Ekstra: 1000 Paket Sembako Menuju Pelosok Timur Indonesia",
-      excerpt:
-        "Menyambut bulan suci, tim RuangDonasi memastikan tidak ada saudara kita yang kelaparan. Perjalanan panjang melintasi lautan demi senyum mereka di ujung timur nusantara. Bantuan ini hasil dari urunan ribuan donatur baik hati.",
-      category: "Kemanusiaan",
-      date: "19 Mei 2026",
-      readTime: "5 Min Baca",
-      imageTag: "Highlight",
-    },
-    {
-      id: 2,
-      title: "Penyaluran Dana Bantuan Tahap 1 Sukses Dilaksanakan di Pelosok Garut",
-      excerpt: "Alhamdulillah, berkat bantuan para donatur, kami telah menyalurkan bantuan bahan pokok dan obat-obatan kepada 500+ keluarga yang membutuhkan.",
-      category: "Penyaluran",
-      date: "18 Mei 2026",
-      readTime: "3 Min Baca",
-    },
-    {
-      id: 3,
-      title: "Kisah Inspiratif: Pak Budi Bangkit dari Keterpurukan Berkat Modal Usaha",
-      excerpt: "Sempat kehilangan pekerjaan akibat krisis, Pak Budi kini sukses membuka warung kelontong berkat dana pemberdayaan ekonomi.",
-      category: "Inspirasi",
-      date: "15 Mei 2026",
-      readTime: "4 Min Baca",
-    },
-    {
-      id: 4,
-      title: "Darurat Bencana: Tim Relawan Diberangkatkan ke Lokasi Banjir Bandang",
-      excerpt: "Merespon cepat bencana banjir yang melanda wilayah pesisir, tim gabungan relawan kemanusiaan telah berangkat membawa 2 ton logistik darurat.",
-      category: "Kemanusiaan",
-      date: "12 Mei 2026",
-      readTime: "2 Min Baca",
-    },
-    {
-      id: 5,
-      title: "Pentingnya Sedekah Subuh untuk Membuka Pintu Rezeki Tiada Henti",
-      excerpt: "Tahukah Anda bahwa sedekah di waktu subuh memiliki keutamaan khusus? Mari pelajari bagaimana rutinitas kecil ini bisa berdampak besar.",
-      category: "Edukasi",
-      date: "10 Mei 2026",
-      readTime: "5 Min Baca",
-    },
-    {
-      id: 6,
-      title: "Peresmian Sekolah Darurat untuk Anak-Anak Korban Gempa",
-      excerpt: "Pendidikan tidak boleh berhenti. Hari ini kami meresmikan 3 tenda sekolah darurat yang dilengkapi fasilitas belajar mengajar yang layak.",
-      category: "Penyaluran",
-      date: "08 Mei 2026",
-      readTime: "3 Min Baca",
-    },
-    {
-      id: 7,
-      title: "Laporan Transparansi Donasi Bulan April 2026",
-      excerpt: "Sebagai bentuk amanah, berikut adalah rincian lengkap penghimpunan dan penyaluran dana donasi selama bulan April 2026.",
-      category: "Edukasi",
-      date: "01 Mei 2026",
-      readTime: "6 Min Baca",
-    },
-    {
-      id: 8,
-      title: "Kolaborasi RuangDonasi dan Komunitas Lokal Bersihkan Pantai",
-      excerpt: "Lebih dari 200 relawan turun tangan membersihkan area pesisir pantai dari sampah plastik dalam rangka memperingati Hari Bumi.",
-      category: "Inspirasi",
-      date: "28 April 2026",
-      readTime: "3 Min Baca",
-    },
-  ];
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [activeCategory]);
+    const fetchNews = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMsg(null);
 
-  const filteredNews = activeCategory === "Semua" ? newsData : newsData.filter((item) => item.category === activeCategory);
+        const response = await api.get("/api/articles", {
+          headers: { "ngrok-skip-browser-warning": "true" },
+        });
 
-  const highlightNews = filteredNews.length > 0 ? filteredNews[0] : null;
-  const restNews = filteredNews.length > 1 ? filteredNews.slice(1) : [];
+        const data = response.data.data || response.data || [];
 
-  const totalPages = Math.ceil(restNews.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedNews = restNews.slice(startIndex, startIndex + itemsPerPage);
+        const mappedData = data
+          .filter((n) => n.status !== "Draft")
+          .map((n) => {
+            const rawDate = new Date(n.date || n.created_at || Date.now());
+            const formattedDate = rawDate.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
 
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 600, behavior: "smooth" });
+            return {
+              id: n.id || n.ID,
+              title: n.title || n.Title,
+              excerpt: n.excerpt || n.Excerpt || n.content?.substring(0, 120) + "...",
+              category: n.category || n.Category || "Kemanusiaan",
+              date: formattedDate,
+              timestamp: rawDate.getTime(),
+              readTime: n.read_time || n.ReadTime || 3,
+              image: n.image || n.Image || `https://picsum.photos/seed/${n.id || "berita"}/800/600`,
+            };
+          });
+
+        setNewsData(mappedData);
+      } catch (error) {
+        console.error("Gagal load berita:", error);
+        setErrorMsg("Gagal memuat berita dari server.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeCategory, search, sort]);
+
+  const filtered = useMemo(() => {
+    let data = newsData;
+    if (activeCategory !== "Semua") data = data.filter((n) => n.category === activeCategory);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      data = data.filter((n) => n.title.toLowerCase().includes(q) || n.excerpt.toLowerCase().includes(q));
+    }
+    data = [...data].sort((a, b) => {
+      if (sort === "newest") return b.timestamp - a.timestamp;
+      if (sort === "oldest") return a.timestamp - b.timestamp;
+      if (sort === "shortest") return a.readTime - b.readTime;
+      return 0;
+    });
+    return data;
+  }, [newsData, activeCategory, search, sort]);
+
+  const featured = filtered[0] || null;
+  const rest = filtered.slice(1);
+  const totalPages = Math.ceil(rest.length / ITEMS_PER_PAGE);
+  const paginated = rest.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const goPage = (p) => {
+    setPage(p);
+    window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans pt-28 pb-24 relative selection:bg-ramadhan-green selection:text-white">
-      <div className="absolute inset-0 z-0 opacity-[0.04] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" style={{ backgroundAttachment: "fixed" }}></div>
+    <div className="min-h-screen bg-gray-50 pt-28 pb-20 font-sans relative overflow-x-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%2316a34a' stroke-width='0.75' stroke-opacity='0.06'/%3E%3Ccircle cx='30' cy='30' r='8' fill='none' stroke='%2316a34a' stroke-width='0.75' stroke-opacity='0.06'/%3E%3Cpath d='M0 0h60v60H0z' fill='none' stroke='%2316a34a' stroke-width='0.5' stroke-opacity='0.03'/%3E%3C/svg%3E")`,
+          backgroundSize: "60px",
+        }}
+      ></div>
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-gray-800 text-xs font-black tracking-wider uppercase mb-6">
-            <span className="w-2 h-2 rounded-full bg-ramadhan-green animate-pulse"></span>
-            Ruang Redaksi
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1] mb-6">
-            Kisah, Kabar & <span className="text-transparent bg-clip-text bg-gradient-to-r from-ramadhan-green to-green-800">Inspirasi</span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-10 text-center lg:text-left">
+          <p className="text-xs font-bold tracking-[0.15em] uppercase text-ramadhan-green mb-2">Ruang Redaksi</p>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-tight mb-4">
+            Kisah, Kabar & <span className="text-transparent bg-clip-text bg-gradient-to-r from-ramadhan-green to-emerald-500">Inspirasi</span>
           </h1>
-          <p className="text-gray-500 text-lg md:text-xl font-medium leading-relaxed">Menyelami cerita di balik setiap uluran tangan. Dari laporan transparansi hingga kisah perjuangan di pelosok negeri.</p>
+          <p className="text-gray-500 font-medium max-w-2xl mx-auto lg:mx-0">Laporan lapangan, kisah nyata penerima manfaat, dan catatan transparansi donasi dari tim relawan RuangDonasi.</p>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12 border-b border-gray-200 pb-6">
-          <div className="flex overflow-x-auto gap-2 w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-10 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
+          <div className="flex flex-wrap justify-center lg:justify-start gap-2 w-full lg:w-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`shrink-0 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${
-                  activeCategory === cat ? "bg-gray-900 text-white shadow-md" : "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-                }`}
+                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${activeCategory === cat ? "bg-ramadhan-green border-ramadhan-green text-white shadow-md" : "bg-transparent border-gray-200 text-gray-500 hover:border-ramadhan-green hover:text-ramadhan-green"}`}
               >
                 {cat}
               </button>
             ))}
           </div>
 
-          <div className="relative w-full md:w-72 group">
-            <input
-              type="text"
-              placeholder="Cari artikel..."
-              className="w-full bg-white/50 border border-gray-200 text-gray-900 pl-11 pr-4 py-2.5 rounded-full focus:outline-none focus:bg-white focus:border-ramadhan-green focus:ring-4 focus:ring-ramadhan-green/10 transition-all duration-300 text-sm font-medium"
-            />
-            <svg className="w-4 h-4 absolute left-4 top-3.5 text-gray-400 group-focus-within:text-ramadhan-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-64">
+              <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" strokeWidth="2.5"></circle>
+                <path d="M21 21l-4.35-4.35" strokeWidth="2.5" strokeLinecap="round"></path>
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari artikel..."
+                className="w-full bg-gray-50 border border-gray-200 focus:border-ramadhan-green focus:ring-2 focus:ring-emerald-50 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none transition-all"
+              />
+            </div>
+
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="w-full sm:w-auto bg-gray-50 border border-gray-200 focus:border-ramadhan-green rounded-xl py-2.5 px-4 text-sm font-bold text-gray-700 outline-none cursor-pointer appearance-none pr-10"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 14px center",
+              }}
+            >
+              {sortOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {highlightNews && currentPage === 1 && (
-          <div className="mb-20 group cursor-pointer">
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
-              <div className="w-full lg:w-3/5 h-[350px] md:h-[450px] rounded-[2rem] overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
-                <div className="absolute inset-0 bg-slate-800">
-                  <div className="w-full h-full bg-ramadhan-green/20 group-hover:scale-105 transition-transform duration-1000 ease-out"></div>
-                </div>
-                <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 shadow-sm z-10">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                  <span className="text-xs font-black text-gray-900 tracking-wider uppercase">Terkini</span>
-                </div>
-              </div>
-
-              <div className="w-full lg:w-2/5 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-5 text-sm font-medium text-gray-500">
-                  <span className="text-ramadhan-green font-bold bg-green-50 px-3 py-1 rounded-md">{highlightNews.category}</span>
-                  <span>•</span>
-                  <span>{highlightNews.date}</span>
-                </div>
-
-                <h2 className="text-3xl md:text-4xl font-black text-gray-900 leading-[1.2] tracking-tight mb-5 group-hover:text-ramadhan-green transition-colors duration-300">{highlightNews.title}</h2>
-
-                <p className="text-gray-500 text-lg leading-relaxed mb-8">{highlightNews.excerpt}</p>
-
-                <div className="flex items-center gap-2 text-gray-900 font-bold group-hover:text-ramadhan-green transition-colors">
-                  <span>Baca Selengkapnya</span>
-                  <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+            <div className="w-10 h-10 border-4 border-green-200 border-t-ramadhan-green rounded-full animate-spin mb-4" style={{ animation: "spin 1s linear infinite" }}></div>
+            <p className="text-gray-500 font-bold">Memuat berita...</p>
           </div>
         )}
 
-        {restNews.length > 0 && (
+        {errorMsg && !isLoading && (
+          <div className="text-center py-20 bg-red-50 rounded-[2rem] border border-red-100 shadow-sm">
+            <h3 className="text-xl font-bold text-red-600 mb-2">Gagal Memuat!</h3>
+            <p className="text-red-500">{errorMsg}</p>
+          </div>
+        )}
+
+        {!isLoading && !errorMsg && featured && page === 1 && (
+          <Link to={`/berita/${featured.id}`} className="block mb-12 group">
+            <div className="bg-white rounded-[2rem] p-3 sm:p-4 shadow-sm border border-gray-100 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center hover:shadow-lg transition-shadow duration-300">
+              <div className="w-full h-[300px] sm:h-[400px] rounded-3xl overflow-hidden relative bg-gray-100">
+                <img src={featured.image} alt={featured.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center">
+                  <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">{featured.category}</span>
+                  <span className="text-white/80 text-xs font-medium flex items-center gap-1.5">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                      <path d="M12 6v6l4 2" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    {featured.readTime} mnt
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 sm:pr-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-8 h-1 bg-ramadhan-green rounded-full"></span>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Artikel Utama</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-snug mb-4 group-hover:text-ramadhan-green transition-colors">{featured.title}</h2>
+                <p className="text-gray-500 leading-relaxed mb-6">{featured.excerpt}</p>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+                  <span className="text-sm font-bold text-gray-400">{featured.date}</span>
+                  <span className="text-sm font-bold text-ramadhan-green flex items-center gap-2 group-hover:translate-x-2 transition-transform">
+                    Baca Selengkapnya
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M5 12h14M12 5l7 7-7 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        )}
+
+        {!isLoading && !errorMsg && filtered.length === 0 && (
+          <div className="text-center py-20 bg-white rounded-[2rem] border border-gray-100 shadow-sm">
+            <h3 className="text-2xl font-bold text-gray-400 mb-2">Tidak ada artikel ditemukan.</h3>
+            <p className="text-gray-500">Coba ubah kata kunci atau kategori pencarian di atas.</p>
+          </div>
+        )}
+
+        {!isLoading && !errorMsg && paginated.length > 0 && (
           <>
-            <h3 className="text-2xl font-black text-gray-900 mb-8 border-b border-gray-200 pb-4 inline-block">Artikel Lainnya</h3>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="w-8 h-1 bg-gray-300 rounded-full"></span>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{page === 1 ? "Artikel Lainnya" : `Halaman ${page}`}</span>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-              {paginatedNews.map((news) => (
-                <div key={news.id} className="group cursor-pointer flex flex-col h-full">
-                  <div className="h-60 rounded-3xl overflow-hidden relative mb-6 shadow-sm border border-gray-100">
-                    <div className="absolute inset-0 bg-slate-200">
-                      <div className="w-full h-full bg-ramadhan-light/10 group-hover:scale-105 transition-transform duration-700 ease-out"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {paginated.map((news) => (
+                <Link key={news.id} to={`/berita/${news.id}`} className="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 flex flex-col group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                  <div className="w-full h-48 sm:h-56 rounded-3xl overflow-hidden relative mb-4 bg-gray-100">
+                    <img src={news.image} alt={news.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+                      <span className="bg-white/90 backdrop-blur-sm text-gray-900 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">{news.category}</span>
+                      <span className="text-white/90 text-[10px] font-bold flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                          <path d="M12 6v6l4 2" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                        {news.readTime} mnt
+                      </span>
                     </div>
-                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold text-gray-900 shadow-sm">{news.readTime}</div>
                   </div>
-
-                  <div className="flex flex-col flex-grow px-2">
-                    <div className="flex items-center gap-2 text-xs font-bold mb-3">
-                      <span className="text-ramadhan-green uppercase tracking-wider">{news.category}</span>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-gray-500">{news.date}</span>
-                    </div>
-
-                    <h4 className="text-xl font-black text-gray-900 mb-3 leading-snug group-hover:text-ramadhan-green transition-colors duration-300 line-clamp-2">{news.title}</h4>
-
-                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 mb-5">{news.excerpt}</p>
-
-                    <div className="mt-auto flex items-center text-sm font-bold text-gray-900 group-hover:text-ramadhan-green transition-colors">
+                  <div className="flex flex-col flex-1 px-2 pb-2">
+                    <span className="text-[11px] font-bold text-gray-400 mb-2">{news.date}</span>
+                    <h3 className="text-lg font-bold text-gray-900 leading-snug mb-3 group-hover:text-ramadhan-green transition-colors line-clamp-2">{news.title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed mb-6 line-clamp-3 flex-1">{news.excerpt}</p>
+                    <div className="flex items-center text-xs font-bold text-ramadhan-green mt-auto border-t border-gray-50 pt-4 group-hover:translate-x-1 transition-transform">
                       Baca Artikel
-                      <svg className="w-4 h-4 ml-1 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M5 12h14M12 5l7 7-7 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-20 pt-8 border-t border-gray-200">
+              <div className="flex items-center justify-center gap-2 mt-12 pt-8 border-t border-gray-200">
                 <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all ${
-                    currentPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-sm border border-gray-200 bg-white"
-                  }`}
+                  onClick={() => goPage(page - 1)}
+                  disabled={page === 1}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all ${page === 1 ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "bg-white text-gray-600 border border-gray-200 hover:border-ramadhan-green hover:text-ramadhan-green shadow-sm"}`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                    <path d="M15 18l-6-6 6-6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-all duration-300 ${
-                      currentPage === page ? "bg-gray-900 text-white shadow-md transform scale-105" : "bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                    }`}
+                    key={p}
+                    onClick={() => goPage(p)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm transition-all shadow-sm ${page === p ? "bg-ramadhan-green text-white" : "bg-white text-gray-600 border border-gray-200 hover:border-ramadhan-green hover:text-ramadhan-green"}`}
                   >
-                    {page}
+                    {p}
                   </button>
                 ))}
-
                 <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all ${
-                    currentPage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-sm border border-gray-200 bg-white"
-                  }`}
+                  onClick={() => goPage(page + 1)}
+                  disabled={page === totalPages}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all ${page === totalPages ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "bg-white text-gray-600 border border-gray-200 hover:border-ramadhan-green hover:text-ramadhan-green shadow-sm"}`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                    <path d="M9 18l6-6-6-6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>
             )}
           </>
-        )}
-
-        {filteredNews.length === 0 && (
-          <div className="text-center py-32">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z"></path>
-              </svg>
-            </div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2">Belum Ada Kabar</h3>
-            <p className="text-gray-500 font-medium">Berita untuk kategori ini sedang dalam tahap penyusunan redaksi.</p>
-          </div>
         )}
       </div>
     </div>

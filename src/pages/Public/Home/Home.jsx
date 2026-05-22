@@ -1,259 +1,412 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import bannerImg from "../../../assets/banner.png";
+import api from "../../../api";
 
-function DonationCard({ kategori, judul, terkumpul, target, persen, sisaWaktu }) {
+function formatRupiah(num) {
+  return `Rp ${Number(num).toLocaleString("id-ID")}`;
+}
+
+function formatCompactRupiah(num) {
+  if (num >= 1000000000) return `Rp ${(num / 1000000000).toFixed(1).replace(".", ",")} M`;
+  if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1).replace(".", ",")} Jt`;
+  if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)} Rb`;
+  return `Rp ${num}`;
+}
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://solving-felt-rush-plant.trycloudflare.com";
+
+function DonationCard({ id, kategori, lokasi, judul, terkumpul, target, persen, sisaWaktu, gambar, berakhir }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 group flex flex-col relative z-10">
-      <div className="h-48 bg-gray-200 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-tr from-gray-300 to-gray-200"></div>
-        <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-md text-ramadhan-green text-xs font-bold px-4 py-2 rounded-full shadow-sm">{kategori}</span>
+    <div onClick={() => navigate(`/donasi/${id}`)} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col">
+      <div className="relative h-48 overflow-hidden bg-gray-100">
+        {gambar ? <img src={gambar} alt={judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />}
+        <div className="absolute top-3 left-3">
+          <span className="bg-white text-gray-700 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">{kategori}</span>
+        </div>
+        <div className="absolute top-3 right-3">
+          {berakhir ? (
+            <span className="bg-[#e53935] text-white text-xs font-bold px-3 py-1 rounded-full">Berakhir</span>
+          ) : (
+            <span className="bg-white text-gray-600 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">{sisaWaktu} lagi</span>
+          )}
+        </div>
       </div>
-
-      <div className="p-6 flex flex-col flex-grow">
-        <h3 className="font-bold text-lg mb-4 text-gray-900 line-clamp-2 transition-colors group-hover:text-ramadhan-green">{judul}</h3>
-
+      <div className="p-5 flex flex-col flex-grow">
+        {lokasi && <p className="text-xs text-gray-400 font-medium mb-1">{lokasi}</p>}
+        <h3 className="font-bold text-gray-900 text-base leading-snug mb-4 line-clamp-2 group-hover:text-[#1a7a4a] transition-colors">{judul}</h3>
         <div className="mt-auto">
-          <div className="flex justify-between text-sm mb-2 font-medium text-gray-600">
-            <span>Terkumpul</span>
-            <span>Target</span>
+          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3 overflow-hidden">
+            <div className="h-1.5 rounded-full bg-[#1a7a4a] transition-all duration-700" style={{ width: persen }} />
           </div>
-          <div className="flex justify-between font-extrabold text-gray-900 mb-4">
-            <span className="text-ramadhan-green">{terkumpul}</span>
-            <span>{target}</span>
-          </div>
-
-          <div className="w-full bg-gray-100 rounded-full h-2.5 mb-5 overflow-hidden shadow-inner">
-            <div className="bg-ramadhan-green h-2.5 rounded-full relative" style={{ width: persen }}>
-              <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse"></div>
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-[#1a7a4a] font-bold text-base">{terkumpul}</p>
+              <p className="text-gray-400 text-xs mt-0.5">dari {target}</p>
             </div>
-          </div>
-
-          <div className="flex justify-between items-center pt-5 border-t border-gray-100">
-            <div className="flex items-center text-gray-500 text-sm font-medium">
-              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              {sisaWaktu}
-            </div>
-            <button className="bg-green-50 text-ramadhan-green font-bold px-5 py-2.5 rounded-xl hover:bg-ramadhan-green hover:text-white hover:shadow-md transition-all duration-300 text-sm">Donasi</button>
+            <p className="text-gray-500 text-sm font-semibold">{persen}</p>
           </div>
         </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/donasi/${id}/bayar`);
+          }}
+          className="mt-5 w-full bg-[#1a7a4a] hover:bg-[#155f3a] text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-sm"
+        >
+          Donasi Sekarang
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NewsCard({ id, judul, tanggal, kategori, gambar, featured }) {
+  const navigate = useNavigate();
+
+  if (featured) {
+    return (
+      <div onClick={() => navigate(`/berita/${id}`)} className="md:col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group h-[340px]">
+        <div className="absolute inset-0 bg-gray-800">
+          {gambar ? (
+            <img src={gambar} alt={judul} className="w-full h-full object-cover opacity-75 group-hover:scale-105 transition-transform duration-500" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#1a7a4a] to-[#0d3d25]" />
+          )}
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 p-6 w-full">
+          <span className="inline-block bg-[#1a7a4a] text-white text-xs font-bold px-3 py-1 rounded-full mb-3">{kategori}</span>
+          <h3 className="text-xl font-bold text-white leading-snug group-hover:text-gray-200 transition-colors line-clamp-3">{judul}</h3>
+          <p className="text-gray-300 text-sm mt-2">{tanggal}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div onClick={() => navigate(`/berita/${id}`)} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col h-[340px]">
+      <div className="h-40 bg-gray-100 overflow-hidden shrink-0">
+        {gambar ? <img src={gambar} alt={judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />}
+      </div>
+      <div className="p-4 flex flex-col flex-grow">
+        <span className="text-[#1a7a4a] text-xs font-bold uppercase tracking-wide mb-2">{kategori}</span>
+        <h3 className="font-bold text-gray-900 text-sm leading-snug group-hover:text-[#1a7a4a] transition-colors line-clamp-3">{judul}</h3>
+        <p className="text-gray-400 text-xs mt-auto pt-3">{tanggal}</p>
       </div>
     </div>
   );
 }
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [donasiData, setDonasiData] = useState([]);
+  const [beritaData, setBeritaData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [platformStats, setPlatformStats] = useState({
+    penerima: 0,
+    penghimpunan: 0,
+    tersalurkan: 0,
+    donatur: 0,
+  });
   const [activeCategory, setActiveCategory] = useState("Semua");
-  const [currentSlidePage, setCurrentSlidePage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const categories = ["Semua", "Ekonomi", "Pendidikan", "Sosial", "Bencana", "Kesehatan"];
 
-  const categories = ["Semua", "Ekonomi", "Pendidikan", "Sosial", "Bencana"];
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        setIsLoading(true);
+        const headers = { "ngrok-skip-browser-warning": "true" };
+        const [resDonasi, resBerita] = await Promise.all([api.get("/api/campaigns", { headers }), api.get("/api/articles", { headers })]);
+
+        const rawDonasi = resDonasi.data.data || [];
+
+        let totalTerkumpul = 0;
+        let totalDonatur = 0;
+        let danaTersalurkan = 0;
+        let expiredCampaignCount = 0;
+        let expiredDonorsCount = 0;
+
+        const mappedDonasi = rawDonasi.map((item) => {
+          const terkumpul = item.terkumpul || item.current_amount || 0;
+          const donatur = item.donatur || item.donatorCount || item.DonatorCount || 0;
+          const isExpired = item.sisaHari <= 0;
+
+          totalTerkumpul += terkumpul;
+          totalDonatur += donatur;
+
+          if (isExpired) {
+            danaTersalurkan += terkumpul;
+            expiredCampaignCount += 1;
+            expiredDonorsCount += donatur;
+          }
+
+          const percent = item.target > 0 ? Math.min(100, Math.round((terkumpul / item.target) * 100)) : 0;
+          const hasImage = item.imgSeed && item.imgSeed.trim() !== "";
+          const imgSrc = hasImage ? (item.imgSeed.startsWith("http") ? item.imgSeed : `${BASE_URL}/${item.imgSeed.replace(/^\/+/, "")}`) : null;
+
+          return {
+            id: item.id,
+            kategori: item.kategori || "Umum",
+            lokasi: item.daerah || "Belum diatur",
+            judul: item.judul,
+            terkumpul: formatRupiah(terkumpul),
+            target: formatRupiah(item.target),
+            persen: `${percent}%`,
+            sisaHariRaw: item.sisaHari,
+            sisaWaktu: isExpired ? "Berakhir" : `${item.sisaHari} Hari`,
+            berakhir: isExpired,
+            gambar: imgSrc,
+          };
+        });
+
+        const penerimaManfaat = expiredDonorsCount + expiredCampaignCount;
+
+        setPlatformStats({
+          penerima: penerimaManfaat,
+          penghimpunan: totalTerkumpul,
+          tersalurkan: danaTersalurkan,
+          donatur: totalDonatur,
+        });
+
+        setDonasiData(mappedDonasi);
+
+        const rawBerita = resBerita.data.data || resBerita.data || [];
+        const publishedBerita = rawBerita
+          .filter((n) => n.status !== "Draft")
+          .sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at))
+          .slice(0, 3)
+          .map((n, index) => {
+            const rawDate = new Date(n.date || n.created_at || Date.now());
+            const formattedDate = rawDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+            return {
+              id: n.id || n.ID,
+              featured: index === 0,
+              kategori: n.category || n.Category || "Informasi",
+              judul: n.title || n.Title,
+              tanggal: formattedDate,
+              gambar: n.image || n.Image || `https://picsum.photos/seed/${n.id || "berita"}/800/600`,
+            };
+          });
+        setBeritaData(publishedBerita);
+      } catch (error) {
+        console.error("Gagal load data Homepage:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
+
+  const filteredDonations = activeCategory === "Semua" ? donasiData : donasiData.filter((d) => d.kategori === activeCategory);
+  const perPage = 3;
+  const totalPages = Math.ceil(filteredDonations.length / perPage);
+  const displayed = filteredDonations.slice(currentPage * perPage, (currentPage + 1) * perPage);
+  const urgentDonations = donasiData.filter((d) => d.sisaHariRaw > 0 && d.sisaHariRaw <= 30).slice(0, 3);
 
   const statsData = [
     {
       label: "Penerima Manfaat",
-      value: "50+",
+      value: platformStats.penerima > 0 ? `${platformStats.penerima}+` : "0",
       icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+          />
         </svg>
       ),
     },
     {
       label: "Penghimpunan",
-      value: "Rp 12.5 Jt",
+      value: formatCompactRupiah(platformStats.penghimpunan),
       icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="2"
+            strokeWidth={1.8}
             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
+          />
         </svg>
       ),
     },
     {
-      label: "Penyaluran",
-      value: "Rp 8.2 Jt",
+      label: "Dana Tersalurkan",
+      value: formatCompactRupiah(platformStats.tersalurkan),
       icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
     {
-      label: "Donatur",
-      value: "120+",
+      label: "Total Donatur",
+      value: platformStats.donatur > 0 ? `${platformStats.donatur}+` : "0",
       icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
       ),
     },
   ];
-
-  const allDonationsData = [
-    { kategori: "Pendidikan", judul: "Bantu Renovasi Sekolah Pelosok yang Hampir Rubuh", terkumpul: "Rp 4.500.000", target: "Rp 40.000.000", persen: "11%", sisaWaktu: "15 Hari" },
-    { kategori: "Ekonomi", judul: "Modal Usaha untuk Janda Dhuafa Tulang Punggung Keluarga", terkumpul: "Rp 1.500.000", target: "Rp 10.000.000", persen: "15%", sisaWaktu: "7 Hari" },
-    { kategori: "Sosial", judul: "Sedekah Beras untuk Santri Penghafal Quran", terkumpul: "Rp 3.000.000", target: "Rp 25.000.000", persen: "12%", sisaWaktu: "3 Hari" },
-    { kategori: "Bencana", judul: "Paket Sembako Darurat Korban Tanah Longsor Jawa Barat", terkumpul: "Rp 5.200.000", target: "Rp 15.000.000", persen: "34%", sisaWaktu: "5 Hari" },
-    { kategori: "Ekonomi", judul: "Bantuan Pengadaan Alat Jahit Kelompok Difabel Kreatif", terkumpul: "Rp 2.100.000", target: "Rp 8.000.000", persen: "26%", sisaWaktu: "22 Hari" },
-    { kategori: "Bencana", judul: "Penyediaan Air Bersih untuk Pengungsi Erupsi Gunung", terkumpul: "Rp 7.000.000", target: "Rp 30.000.000", persen: "23%", sisaWaktu: "18 Hari" },
-  ];
-
-  const displayedDonations = allDonationsData.slice(currentSlidePage * 3, (currentSlidePage + 1) * 3);
-  const totalPages = Math.ceil(allDonationsData.length / 3);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans pb-20 relative">
-      <div className="absolute inset-0 z-0 opacity-15 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" style={{ backgroundAttachment: "fixed" }}></div>
+    <div className="min-h-screen bg-[#f5f7f5] font-sans pb-20">
+      <section className="relative w-full" style={{ height: "85vh", minHeight: 480 }}>
+        <img src={bannerImg} alt="Banner Donasi" className="w-full h-full object-cover object-top" />
+      </section>
 
-      <div className="relative z-10 w-full">
-        <section className="w-full">
-          <div className="w-full h-screen relative bg-white cursor-pointer">
-            <img src={bannerImg} alt="Banner Utama Donasi" className="w-full h-full object-cover object-center" />
+      <section className="max-w-5xl mx-auto px-6 -mt-8 relative z-20">
+        <div className="bg-white rounded-2xl shadow-md grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
+          {statsData.map((stat, idx) => (
+            <div key={idx} className="flex flex-col items-center py-7 px-4 text-center">
+              <div className="w-12 h-12 rounded-full bg-[#eaf5ef] flex items-center justify-center mb-3 text-[#1a7a4a]">{stat.icon}</div>
+              <p className="text-2xl font-black text-gray-900">{isLoading ? <span className="animate-pulse bg-gray-200 h-6 w-20 rounded inline-block"></span> : stat.value}</p>
+              <p className="text-gray-500 text-sm mt-1 font-medium">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-6 mt-16">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-3">
+          <div>
+            <p className="text-[#1a7a4a] text-sm font-bold uppercase tracking-widest mb-1">Program Kami</p>
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900">Program Donasi Aktif</h2>
           </div>
-        </section>
+          <button onClick={() => navigate("/donasi")} className="text-[#1a7a4a] font-semibold text-sm hover:underline flex items-center gap-1">
+            Lihat Semua
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
 
-        <section className="max-w-7xl mx-auto px-6 relative z-20 -mt-24 mb-16">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_10px_40px_rgb(0,0,0,0.05)] border border-white grid grid-cols-2 md:grid-cols-4 gap-8 p-8 md:p-10 relative overflow-hidden">
-            {statsData.map((stat, idx) => (
-              <div key={idx} className="flex flex-col items-center justify-center text-center group cursor-default">
-                <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-50 flex items-center justify-center mb-5 group-hover:bg-ramadhan-green group-hover:border-ramadhan-green group-hover:-translate-y-2 transition-all duration-300">
-                  <div className="text-ramadhan-green group-hover:text-white transition-colors duration-300">{stat.icon}</div>
-                </div>
-                <p className="text-2xl md:text-3xl font-black text-gray-900 group-hover:text-ramadhan-green transition-colors duration-300">{stat.value}</p>
-                <p className="text-gray-500 mt-1 font-medium">{stat.label}</p>
-              </div>
+        <div className="flex gap-2 flex-wrap mb-8">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setActiveCategory(cat);
+                setCurrentPage(0);
+              }}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 border ${
+                activeCategory === cat ? "bg-[#1a7a4a] text-white border-[#1a7a4a] shadow-sm" : "bg-white text-gray-600 border-gray-200 hover:border-[#1a7a4a] hover:text-[#1a7a4a]"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <p className="text-center text-gray-500 py-10">Memuat program donasi...</p>
+        ) : displayed.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {displayed.map((item, idx) => (
+              <DonationCard key={idx} {...item} />
             ))}
           </div>
-        </section>
+        ) : (
+          <p className="text-center text-gray-500 py-10 bg-white rounded-xl">Belum ada program untuk kategori ini.</p>
+        )}
 
-        <section className="max-w-7xl mx-auto px-6 py-10">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-6 tracking-tight">Pilih Kategori Donasi</h2>
-            <div className="flex justify-center gap-3 flex-wrap">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-7 py-3 rounded-full text-sm font-bold transition-all duration-300 shadow-sm ${
-                    activeCategory === cat
-                      ? "bg-ramadhan-green text-white shadow-[0_4px_15px_rgba(22,163,74,0.3)] transform scale-105"
-                      : "bg-white/80 backdrop-blur-sm text-gray-600 border border-white hover:border-ramadhan-green hover:text-ramadhan-green hover:shadow-md"
-                  }`}
-                >
-                  {cat}
-                </button>
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-8">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <button key={idx} onClick={() => setCurrentPage(idx)} className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? "bg-[#1a7a4a] w-6" : "bg-gray-300 w-2 hover:bg-gray-400"}`} />
+            ))}
+          </div>
+        )}
+
+        <div className="text-center mt-8">
+          <button
+            onClick={() => navigate("/donasi")}
+            className="inline-flex items-center gap-2 bg-white hover:bg-[#1a7a4a] hover:text-white text-gray-800 border border-gray-200 font-semibold px-8 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-sm group"
+          >
+            Lihat Semua Kategori
+            <svg className="w-4 h-4 text-[#1a7a4a] group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      {urgentDonations.length > 0 && (
+        <section className="bg-white border-y border-gray-100 mt-16 py-16">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-3">
+              <div>
+                <p className="text-[#1a7a4a] text-sm font-bold uppercase tracking-widest mb-1">Butuh Bantuan Segera</p>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900">Program Mendesak</h2>
+                <p className="text-gray-500 text-sm mt-1">Program yang tenggat waktunya kurang dari 30 hari.</p>
+              </div>
+              <button onClick={() => navigate("/donasi")} className="text-[#1a7a4a] font-semibold text-sm hover:underline flex items-center gap-1">
+                Lihat Semua
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {urgentDonations.map((item, idx) => (
+                <DonationCard key={idx} {...item} />
               ))}
             </div>
           </div>
+        </section>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 transition-all duration-500 ease-in-out">
-            {displayedDonations.map((item, index) => (
-              <DonationCard key={index} {...item} />
+      <section className="max-w-6xl mx-auto px-6 mt-16">
+        <div className="bg-[#1a7a4a] rounded-2xl p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-5"
+            style={{ backgroundImage: "radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+          />
+          <div className="relative z-10">
+            <h2 className="text-2xl md:text-3xl font-black text-white mb-2">Bersama Kita Bisa Memberi Dampak Nyata</h2>
+            <p className="text-green-100 text-sm">Setiap rupiah yang kamu donasikan akan tersalurkan langsung kepada yang membutuhkan.</p>
+          </div>
+          <div className="flex gap-3 relative z-10 shrink-0">
+            <button onClick={() => navigate("/donasi")} className="bg-white text-[#1a7a4a] font-bold px-7 py-3.5 rounded-xl hover:bg-gray-50 transition-colors text-sm shadow-md">
+              Donasi Sekarang
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-6 mt-16">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-[#1a7a4a] text-sm font-bold uppercase tracking-widest mb-1">Artikel & Laporan</p>
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900">Berita Terkini</h2>
+          </div>
+          <button onClick={() => navigate("/berita")} className="text-[#1a7a4a] font-semibold text-sm hover:underline flex items-center gap-1">
+            Lihat Semua
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        {isLoading ? (
+          <p className="text-center text-gray-500 py-10">Memuat berita terkini...</p>
+        ) : beritaData.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {beritaData.map((news, idx) => (
+              <NewsCard key={idx} {...news} />
             ))}
           </div>
-
-          <div className="flex justify-center items-center gap-2.5 mt-10">
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlidePage(idx)}
-                className={`h-3 rounded-full transition-all duration-300 ${currentSlidePage === idx ? "bg-ramadhan-green w-7 shadow-[0_2px_8px_rgba(22,163,74,0.3)]" : "bg-gray-300 w-3 hover:bg-gray-400"}`}
-              />
-            ))}
-          </div>
-
-          <div className="text-center mt-8">
-            <a
-              href="/donasi"
-              className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 font-bold px-8 py-3.5 rounded-full shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95"
-            >
-              Lihat Semua Kategori
-              <svg className="w-5 h-5 text-ramadhan-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-              </svg>
-            </a>
-          </div>
-        </section>
-
-        <section className="py-16 mt-8 bg-white border-y border-gray-100 relative">
-          <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
-              <div>
-                <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Program Donasi Terkini</h2>
-                <p className="text-gray-500 font-medium">Program mendesak yang sangat membutuhkan uluran tanganmu segera.</p>
-              </div>
-              <a href="/donasi" className="text-ramadhan-green font-bold hover:text-green-700 hover:underline transition-all flex items-center gap-1">
-                Lihat Semua{" "}
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-                </svg>
-              </a>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <DonationCard kategori="Bencana" judul="Bantuan Darurat Evakuasi dan Logistik Gempa Bumi" terkumpul="Rp 2.000.000" target="Rp 100.000.000" persen="2%" sisaWaktu="30 Hari" />
-              <DonationCard kategori="Sosial" judul="Pembangunan Masjid Al-Ikhlas di Pelosok Desa" terkumpul="Rp 1.500.000" target="Rp 300.000.000" persen="0.5%" sisaWaktu="60 Hari" />
-              <DonationCard kategori="Kesehatan" judul="Bantu Biaya Pengobatan Kanker Adik Budi" terkumpul="Rp 0" target="Rp 50.000.000" persen="0%" sisaWaktu="12 Hari" />
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16 relative">
-          <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Berita Terkini</h2>
-              <a href="/berita" className="text-[#d81b60] font-bold hover:text-pink-700 transition-colors flex items-center gap-1 text-sm md:text-base">
-                Lihat semua &rarr;
-              </a>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="md:col-span-2 relative rounded-3xl overflow-hidden group cursor-pointer shadow-sm hover:shadow-lg transition-all duration-500 h-[350px] md:h-[400px]">
-                <div className="absolute inset-0 bg-slate-700">
-                  <div className="w-full h-full bg-ramadhan-green/40 group-hover:scale-105 transition-transform duration-700 ease-out"></div>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-
-                <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
-                  <div className="bg-black/40 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 mb-3 w-fit border border-white/20">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    26 Dec 2025
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white leading-snug group-hover:text-gray-200 transition-colors">Bantuan Gizi dari Laznas PYI Disambut Para Petani Dhuafa Desa Tarumajaya Bandung</h3>
-                </div>
-              </div>
-
-              <div className="md:col-span-1 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 cursor-pointer group flex flex-col overflow-hidden h-[350px] md:h-[400px]">
-                <div className="h-44 bg-gray-200 relative overflow-hidden shrink-0">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-gray-300 to-gray-200"></div>
-                  <div className="w-full h-full bg-ramadhan-light/20 group-hover:scale-110 transition-transform duration-700 ease-out"></div>
-                </div>
-                <div className="p-5 flex flex-col flex-grow">
-                  <h3 className="text-base font-bold text-gray-900 mb-3 group-hover:text-ramadhan-green transition-colors line-clamp-4 leading-snug">Wujudkan Solidaritas, FOZ Jawa Barat Pimpin Pelepasan Bantuan untuk...</h3>
-                  <p className="text-gray-400 text-sm mt-auto font-medium">26 Dec 2025</p>
-                </div>
-              </div>
-
-              <div className="md:col-span-1 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 cursor-pointer group flex flex-col overflow-hidden h-[350px] md:h-[400px]">
-                <div className="h-44 bg-gray-200 relative overflow-hidden shrink-0">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-gray-300 to-gray-200"></div>
-                  <div className="w-full h-full bg-ramadhan-light/20 group-hover:scale-110 transition-transform duration-700 ease-out"></div>
-                </div>
-                <div className="p-5 flex flex-col flex-grow">
-                  <h3 className="text-base font-bold text-gray-900 mb-3 group-hover:text-ramadhan-green transition-colors line-clamp-4 leading-snug">Program MESRA Laznas PYI Salurkan Bantuan Gizi untuk Anak Yatim dan Dhuafa di...</h3>
-                  <p className="text-gray-400 text-sm mt-auto font-medium">26 Dec 2025</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
+        ) : (
+          <p className="text-center text-gray-500 py-10 bg-white rounded-xl">Belum ada artikel dipublikasikan.</p>
+        )}
+      </section>
     </div>
   );
 }

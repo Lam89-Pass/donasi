@@ -1,147 +1,324 @@
 import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import api from "../../api";
+const fmt = (n) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    notation: "compact",
+    compactDisplay: "short",
+  }).format(n);
+
+const getLast6Months = () => {
+  const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    return { month: BULAN[d.getMonth()], year: d.getFullYear(), monthIdx: d.getMonth() };
+  });
+};
+
+const parseIndonesianDate = (dateStr) => {
+  if (!dateStr) return new Date();
+  const months = {
+    Jan: 0,
+    Feb: 1,
+    Mar: 2,
+    Apr: 3,
+    Mei: 4,
+    Jun: 5,
+    Jul: 6,
+    Ags: 7,
+    Sep: 8,
+    Okt: 9,
+    Nov: 10,
+    Des: 11,
+  };
+  const parts = dateStr.split(" ");
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = months[parts[1]];
+    const year = parseInt(parts[2], 10);
+    if (month !== undefined) return new Date(year, month, day);
+  }
+  return new Date(dateStr); 
+};
+function BarChart({ data }) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const W = 520,
+    H = 120,
+    barW = 36;
+  const gap = (W - barW * data.length) / (data.length + 1);
+  const lastIdx = data.length - 1;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 28}`} width="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id="barActive" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#1d4ed8" />
+        </linearGradient>
+        <linearGradient id="barIdle" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.07)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
+        </linearGradient>
+      </defs>
+      {data.map((d, i) => {
+        const barH = Math.max(4, (d.value / max) * H);
+        const x = gap + i * (barW + gap);
+        const y = H - barH;
+        const isLast = i === lastIdx;
+        return (
+          <g key={i}>
+            <rect x={x} y={0} width={barW} height={H} rx={6} fill="rgba(255,255,255,0.03)" />
+            <rect x={x} y={y} width={barW} height={barH} rx={6} fill={isLast ? "url(#barActive)" : "url(#barIdle)"} style={{ transition: "all 0.4s ease" }} />
+            {isLast && (
+              <text x={x + barW / 2} y={y - 7} textAnchor="middle" style={{ fontSize: 9, fill: "#60a5fa", fontWeight: 700, fontFamily: "Sora, system-ui" }}>
+                {fmt(d.value)}
+              </text>
+            )}
+            <text x={x + barW / 2} y={H + 18} textAnchor="middle" style={{ fontSize: 10, fill: isLast ? "#94a3b8" : "#334155", fontWeight: isLast ? 700 : 500, fontFamily: "Sora, system-ui" }}>
+              {d.month}
+            </text>
+          </g>
+        );
+      })}
+      <line x1={0} y1={0} x2={W} y2={0} stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+    </svg>
+  );
+}
+
+function StatCard({ label, value, sub, accent = "#3b82f6", delay = 0, isLoading }) {
+  return (
+    <div
+      style={{
+        background: "#0d1020",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 14,
+        padding: "16px 18px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        animation: "fadeUp 0.4s ease both",
+        animationDelay: `${delay}ms`,
+        borderTop: `2px solid ${accent}30`,
+      }}
+    >
+      <p style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>{label}</p>
+      {isLoading ? (
+        <span className="skeleton" style={{ display: "block", width: "70%", height: 24, borderRadius: 5, margin: "2px 0" }} />
+      ) : (
+        <p style={{ fontSize: 22, fontWeight: 700, color: accent, margin: 0, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{value}</p>
+      )}
+      {sub && <p style={{ fontSize: 10, color: "#334155", margin: 0 }}>{sub}</p>}
+    </div>
+  );
+}
 
 export default function Statistik() {
   const [userRole, setUserRole] = useState("user");
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({ totalDana: 0, programAktif: 0, transaksiSukses: 0, totalBerita: 0 });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
-    setUserRole(localStorage.getItem("devRole") || "superadmin");
+    const role = localStorage.getItem("devRole") || "user";
+    setUserRole(role);
+    fetchDashboardData(role);
   }, []);
 
+  const fetchDashboardData = async (role) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const config = { headers: { Authorization: `Bearer ${token}`, "ngrok-skip-browser-warning": "true" } };
+      const [txRes, campRes, newsRes] = await Promise.all([
+        api.get("/api/transactions", config),
+        api.get("/api/campaigns", config),
+        api.get("/api/articles", config).catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const transactions = txRes.data.data || [];
+      const campaigns = campRes.data.data || [];
+      const berita = newsRes.data.data || newsRes.data || [];
+
+      let totalDana = 0,
+        txSukses = 0;
+      const programUnik = new Set();
+      const activities = [];
+
+      const monthlyMap = {};
+      const last6 = getLast6Months();
+      last6.forEach(({ year, monthIdx }) => {
+        monthlyMap[`${year}-${monthIdx}`] = 0;
+      });
+
+      transactions.forEach((t) => {
+        const isSuccess = t.status === "success" || t.status === "Sukses";
+        if (isSuccess) {
+          totalDana += t.amount;
+          txSukses++;
+          if (t.program) programUnik.add(t.program);
+          if (activities.length < 5) {
+            activities.push({
+              name: t.user,
+              act: "berdonasi",
+              amount: `Rp ${t.amount.toLocaleString("id-ID")}`,
+              target: t.program,
+              time: t.date,
+            });
+          }
+
+          if (t.date) {
+            const d = parseIndonesianDate(t.date);
+            if (!isNaN(d)) {
+              const key = `${d.getFullYear()}-${d.getMonth()}`;
+              if (key in monthlyMap) monthlyMap[key] += t.amount;
+            }
+          }
+        }
+      });
+
+      setStats({
+        totalDana,
+        programAktif: role === "user" ? programUnik.size : campaigns.length,
+        transaksiSukses: txSukses,
+        totalBerita: Array.isArray(berita) ? berita.length : 0,
+      });
+
+      setRecentActivity(activities);
+
+      const hasRealData = last6.some(({ year, monthIdx }) => monthlyMap[`${year}-${monthIdx}`] > 0);
+      setChartData(
+        last6.map(({ month, year, monthIdx }, i) => ({
+          month,
+          value: hasRealData ? monthlyMap[`${year}-${monthIdx}`] : totalDana * [0.1, 0.15, 0.12, 0.2, 0.18, 0.25][i],
+        })),
+      );
+    } catch (error) {
+      console.error("Gagal load dashboard:", error);
+      toast.error("Gagal memuat statistik dashboard");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isUser = userRole === "user";
-  const isAdmin = userRole === "admin" || userRole === "superadmin";
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#09090b]">
-      <header className="h-[72px] bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-800/60 flex items-center justify-between px-8 z-10 sticky top-0">
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", background: "#07090e", fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif", color: "#e2e8f0" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shimmer { 0%{background-position:-500px 0} 100%{background-position:500px 0} }
+        .skeleton { background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.06) 50%,rgba(255,255,255,0.03) 75%); background-size:500px 100%; animation:shimmer 1.4s infinite linear; }
+        .stat-scroll::-webkit-scrollbar { display:none; }
+        .feed-item { transition:background 0.15s; border-radius:8px; }
+        .feed-item:hover { background:rgba(255,255,255,0.025); }
+      `}</style>
+
+      <div
+        style={{
+          padding: "0 24px",
+          height: 64,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          background: "rgba(7,9,14,0.9)",
+          backdropFilter: "blur(12px)",
+          flexShrink: 0,
+        }}
+      >
         <div>
-          <h1 className="text-xl font-bold text-zinc-100 tracking-tight">{isUser ? "Ringkasan Donatur" : "Tinjauan Platform"}</h1>
+          <p style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", letterSpacing: "0.1em", margin: 0, textTransform: "uppercase" }}>{isUser ? "RINGKASAN DONATUR" : "TINJAUAN PLATFORM"}</p>
+          <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.3 }}>{isUser ? "Statistik Saya" : "Dashboard Statistik"}</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Real-time Sinkronisasi
+      </div>
+
+      <div className="stat-scroll" style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+          <div
+            style={{
+              background: "linear-gradient(135deg, #0d1830 0%, #0d1020 100%)",
+              border: "1px solid rgba(37,99,235,0.25)",
+              borderRadius: 16,
+              padding: "20px 20px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              minHeight: 130,
+              position: "relative",
+              overflow: "hidden",
+              animation: "fadeUp 0.3s ease both",
+              borderTop: "2px solid rgba(37,99,235,0.4)",
+            }}
+          >
+            <div style={{ position: "absolute", top: -30, right: -30, width: 100, height: 100, background: "rgba(37,99,235,0.15)", borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none" }} />
+            <p style={{ fontSize: 10, fontWeight: 600, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>{isUser ? "Total Donasi Saya" : "Total Donasi"}</p>
+            {isLoading ? (
+              <span className="skeleton" style={{ display: "block", width: "75%", height: 28, borderRadius: 6, marginTop: 10 }} />
+            ) : (
+              <p style={{ fontSize: 26, fontWeight: 700, color: "#60a5fa", margin: "8px 0 0", lineHeight: 1 }}>{fmt(stats.totalDana)}</p>
+            )}
           </div>
+
+          <StatCard label={isUser ? "Program Didukung" : "Program Aktif"} value={stats.programAktif} sub={isUser ? "berhasil didanai" : "kampanye berjalan"} accent="#34d399" delay={60} isLoading={isLoading} />
+          <StatCard label="Transaksi Sukses" value={stats.transaksiSukses.toLocaleString("id-ID")} sub={isUser ? "donasi berhasil" : "seluruh platform"} accent="#60a5fa" delay={120} isLoading={isLoading} />
+          <StatCard label="Total Berita" value={stats.totalBerita} sub="artikel dipublikasikan" accent="#f472b6" delay={180} isLoading={isLoading} />
         </div>
-      </header>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 max-w-7xl mx-auto">
-          <div className="col-span-1 md:col-span-12 lg:col-span-4 relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 to-[#09090b] border border-zinc-800 p-6 flex flex-col justify-between min-h-[220px]">
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/20 blur-[50px] rounded-full pointer-events-none"></div>
-
-            <div>
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-1">{isUser ? "Total Kebaikan Saya" : "Akumulasi Dana Masuk"}</p>
-              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">{isUser ? "Rp 1.240.500" : "Rp 8,42M"}</h2>
-            </div>
-
-            <div className="mt-8 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md w-fit border border-emerald-500/20">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                </svg>
-                +12.4% vs bulan lalu
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14 }}>
+          <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "20px 22px", animation: "fadeUp 0.4s ease both", animationDelay: "200ms" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>Tren Dana Masuk</p>
+                <p style={{ fontSize: 10, color: "#334155", margin: "3px 0 0" }}>6 bulan terakhir</p>
               </div>
-              <svg className="w-8 h-8 text-zinc-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+              <div style={{ padding: "4px 10px", borderRadius: 6, background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.2)", fontSize: 10, fontWeight: 600, color: "#60a5fa" }}>Aktual</div>
             </div>
+            {isLoading ? <span className="skeleton" style={{ display: "block", width: "100%", height: 148, borderRadius: 8 }} /> : <BarChart data={chartData} />}
           </div>
 
-          <div className="col-span-1 md:col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="bg-[#18181b] border border-zinc-800/80 rounded-3xl p-5 flex flex-col justify-center relative hover:bg-zinc-900 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-3">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  ></path>
-                </svg>
-              </div>
-              <h3 className="text-2xl font-black text-white">{isUser ? "12" : "148"}</h3>
-              <p className="text-[11px] font-medium text-zinc-500 mt-0.5">{isUser ? "Program Didukung" : "Program Donasi Aktif"}</p>
+          <div style={{ background: "#0d1020", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "20px 22px", display: "flex", flexDirection: "column", animation: "fadeUp 0.4s ease both", animationDelay: "260ms" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", margin: 0 }}>Aktivitas Terbaru</p>
+              <span style={{ fontSize: 10, color: "#334155" }}>{recentActivity.length} entri</span>
             </div>
-
-            <div className="bg-[#18181b] border border-zinc-800/80 rounded-3xl p-5 flex flex-col justify-center relative hover:bg-zinc-900 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 mb-3">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <h3 className="text-2xl font-black text-white">{isUser ? "15" : "4,291"}</h3>
-              <p className="text-[11px] font-medium text-zinc-500 mt-0.5">Transaksi Sukses</p>
-            </div>
-
-            <div className="hidden md:flex bg-[#18181b] border border-zinc-800/80 rounded-3xl p-5 flex-col justify-center relative hover:bg-zinc-900 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 mb-3">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-              </div>
-              <h3 className="text-2xl font-black text-white">{isUser ? "0" : "12.4K"}</h3>
-              <p className="text-[11px] font-medium text-zinc-500 mt-0.5">{isUser ? "Sertifikat Kebaikan" : "Total Donatur Terdaftar"}</p>
-            </div>
-          </div>
-
-          <div className="col-span-1 md:col-span-12 lg:col-span-7 bg-[#18181b] border border-zinc-800/80 rounded-3xl p-6 flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-white">Program Mendesak</h3>
-              <button className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors">Lihat Semua →</button>
-            </div>
-
-            <div className="space-y-5 flex-1">
-              {[
-                { title: "Bantuan Pangan Pelosok Garut", terkumpul: "45.200.000", target: "50.000.000", percent: 90 },
-                { title: "Renovasi Madrasah Al-Ikhlas", terkumpul: "12.500.000", target: "25.000.000", percent: 50 },
-                { title: "Air Bersih untuk NTT", terkumpul: "8.100.000", target: "100.000.000", percent: 8 },
-              ].map((prog, i) => (
-                <div key={i} className="group">
-                  <div className="flex justify-between items-end mb-2">
-                    <p className="text-xs font-bold text-zinc-300 group-hover:text-emerald-400 transition-colors">{prog.title}</p>
-                    <span className="text-[10px] text-zinc-500 font-medium">
-                      Rp {prog.terkumpul} / Rp {prog.target}
-                    </span>
-                  </div>
-                  <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-zinc-800">
-                    <div className={`h-full rounded-full relative ${prog.percent > 80 ? "bg-emerald-500" : prog.percent > 40 ? "bg-blue-500" : "bg-red-500"}`} style={{ width: `${prog.percent}%` }}>
-                      <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} style={{ padding: "8px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span className="skeleton" style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginTop: 4 }} />
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span className="skeleton" style={{ display: "block", width: "90%", height: 11, borderRadius: 4 }} />
+                      <span className="skeleton" style={{ display: "block", width: "40%", height: 9, borderRadius: 4 }} />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="col-span-1 md:col-span-12 lg:col-span-5 bg-[#18181b] border border-zinc-800/80 rounded-3xl p-6">
-            <h3 className="text-sm font-bold text-white mb-6">Aktivitas Terbaru</h3>
-
-            <div className="space-y-4">
-              {[
-                { name: isUser ? "Anda" : "Hamba Allah", act: "berdonasi Rp 100.000", target: "Renovasi Madrasah", time: "2 mnt lalu" },
-                { name: isUser ? "Sistem" : "Muhamad Nur Salam", act: "verifikasi data pencairan", target: "Bantuan Pangan", time: "15 mnt lalu" },
-                { name: isUser ? "Anda" : "Siti Maela", act: "berdonasi Rp 50.000", target: "Air Bersih NTT", time: "1 jam lalu" },
-                { name: isUser ? "Sistem" : "Anonim", act: "berdonasi Rp 500.000", target: "Bantuan Pangan", time: "2 jam lalu" },
-              ].map((feed, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 mt-1.5 shrink-0"></div>
-                  <div>
-                    <p className="text-[11px] text-zinc-400 leading-relaxed">
-                      <span className="font-bold text-zinc-200">{feed.name}</span> {feed.act} untuk <span className="font-medium text-emerald-400">{feed.target}</span>.
-                    </p>
-                    <p className="text-[9px] font-bold text-zinc-600 mt-0.5">{feed.time}</p>
+                ))
+              ) : recentActivity.length > 0 ? (
+                recentActivity.map((f, i) => (
+                  <div key={i} className="feed-item" style={{ padding: "8px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginTop: 4, background: "#3b82f6" }} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 11, color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                        <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{f.name}</span> {f.act}
+                        <span style={{ color: "#60a5fa" }}> {f.amount}</span> untuk <span style={{ color: "#4ade80" }}>{f.target}</span>
+                      </p>
+                      <p style={{ fontSize: 9, color: "#334155", margin: "2px 0 0", fontWeight: 600 }}>{f.time}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p style={{ fontSize: 11, color: "#475569", textAlign: "center", marginTop: 20 }}>Belum ada aktivitas transaksi sukses.</p>
+              )}
             </div>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto mt-8 flex flex-col md:flex-row justify-between items-center border-t border-zinc-800/50 pt-6 gap-2">
-          <p className="text-[10px] font-medium text-zinc-600">© 2026 RuangDonasi. Developed for UNITY #14.</p>
-          <div className="flex gap-4 text-[10px] font-bold text-zinc-500">
-            <span className="hover:text-zinc-300 cursor-pointer transition-colors">Panduan Sistem</span>
-            <span className="hover:text-zinc-300 cursor-pointer transition-colors">Lapor Kendala</span>
           </div>
         </div>
       </div>

@@ -14,6 +14,9 @@ import ProgramDonasi from "./pages/Dashboard/ProgramDonasi";
 import KelolaBerita from "./pages/Dashboard/KelolaBerita";
 import Transaksi from "./pages/Dashboard/Transaksi";
 import Profile from "./pages/Dashboard/Profile";
+import BeritaDetail from "./pages/Public/Berita/BeritaDetail";
+import DonasiDetail from "./pages/Public/Donasi/DonasiDetail";
+import ProsesDonasi from "./pages/Public/Donasi/ProsesDonasi";
 
 function AppContent() {
   const location = useLocation();
@@ -46,7 +49,10 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/berita" element={<Berita />} />
+          <Route path="/berita/:id" element={<BeritaDetail />} />
           <Route path="/donasi" element={<Donasi />} />
+          <Route path="/donasi/:id" element={<DonasiDetail />} />
+          <Route path="/donasi/:id/bayar" element={<ProsesDonasi />} />
         </Routes>
       )}
 
